@@ -3,7 +3,8 @@ using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
-using AngleSharp.Html.Parser;
+using AngleSharp.Xml.Dom;
+using AngleSharp.Xml.Parser;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,27 +18,42 @@ using Xunit;
 // Tests based on tests from http://roadkill.codeplex.com/
 
 // To create unit tests in this class reference is taken from
-// https://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet#RULE_.232_-_Attribute_Escape_Before_Inserting_Untrusted_Data_into_HTML_Common_Attributes
-// and http://ha.ckers.org/xss.html
+// https://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet#RULE_.232_-_Attribute_Escape_Before_Inserting_Untrusted_Data_into_Xml_Common_Attributes
+// and http://ha.ckers.org/xss.Xml
 
 namespace Ganss.XSS.Tests
 {
-    public class HtmlSanitizerFixture
+    public class XmlSanitizerFixture
     {
-        public HtmlSanitizer Sanitizer { get; set; } = new HtmlSanitizer();
+        public XmlSanitizer Sanitizer { get; set; } = new XmlSanitizer();
     }
 
     /// <summary>
-    /// Tests for <see cref="HtmlSanitizer"/>.
+    /// Tests for <see cref="XmlSanitizer"/>.
     /// </summary>
-    public class HtmlSanitizerTests: IClassFixture<HtmlSanitizerFixture>
+    public class XmlSanitizerTests : IClassFixture<XmlSanitizerFixture>
     {
-        public HtmlSanitizer Sanitizer { get; set; }
+        public XmlSanitizer Sanitizer { get; set; }
 
-        public HtmlSanitizerTests(HtmlSanitizerFixture fixture)
+        public XmlSanitizerTests(XmlSanitizerFixture fixture)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Sanitizer = fixture.Sanitizer;
+        }
+
+
+        [Fact]
+        public void Prout()
+        {
+            var s = new XmlSanitizer();
+            s.AllowedTags.Add("svg");
+            s.AllowedTags.Add("circle");
+            s.AllowedAttributes("cx");
+            var Xml = "<svg height=\"100\" width=\"100\"><circle cx=\"50\" cy=\"50\" r=\"40\" stroke=\"black\" stroke-width=\"3\" fill=\"red\" /></svg>";
+
+            var actual = s.SanitizeDocument(Xml);
+
+            Assert.Equal(Xml, actual);
         }
 
         /// <summary>
@@ -50,8 +66,8 @@ namespace Ganss.XSS.Tests
             var sanitizer = Sanitizer;
 
             // Act
-            string htmlFragment = "<a href=\"'';!--\"<XSS>=&{()}\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<a href=\"'';!--\"<XSS>=&{()}\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = @"<a href=""'';!--"">=&amp;{()}""&gt;</a>";
@@ -70,8 +86,8 @@ namespace Ganss.XSS.Tests
 
 
             // Action
-            string htmlFragment = "<IMG SRC=\"javascript:alert('XSS');\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=\"javascript:alert('XSS');\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -90,8 +106,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=javascript:alert('XSS')>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=javascript:alert('XSS')>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<IMG>";
@@ -110,8 +126,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=JaVaScRiPt:alert('XSS')>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=JaVaScRiPt:alert('XSS')>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<IMG>";
@@ -119,19 +135,19 @@ namespace Ganss.XSS.Tests
         }
 
         /// <summary>
-        /// A test for Image Xss vector with Html entities
+        /// A test for Image Xss vector with Xml entities
         /// Example <!-- <IMG SRC=javascript:alert(&quot;XSS&quot;)> -->
         /// </summary>
         [Fact]
-        public void ImageHtmlEntitiesXSSTest()
+        public void ImageXmlEntitiesXSSTest()
         {
             // Arrange
             var sanitizer = Sanitizer;
 
 
             // Act
-            string htmlFragment = "<IMG SRC=javascript:alert(&quot;XSS&quot;)>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=javascript:alert(&quot;XSS&quot;)>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<IMG>";
@@ -150,8 +166,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=`javascript:alert(\"RSnake says, 'XSS'\")`>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=`javascript:alert(\"RSnake says, 'XSS'\")`>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -170,8 +186,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG \"\"\"><SCRIPT>alert(\"XSS\")</SCRIPT>\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG \"\"\"><SCRIPT>alert(\"XSS\")</SCRIPT>\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>\"&gt;";
@@ -190,8 +206,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=javascript:alert(String.fromCharCode(88,83,83))>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=javascript:alert(String.fromCharCode(88,83,83))>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -210,8 +226,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#88;&#83;&#83;&#39;&#41;>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#88;&#83;&#83;&#39;&#41;>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -230,8 +246,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105&#0000112&#0000116&#0000058&#0000097&#0000108&#0000101&#0000114&#0000116&#0000040&#0000039&#0000088&#0000083&#0000083&#0000039&#0000041>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105&#0000112&#0000116&#0000058&#0000097&#0000108&#0000101&#0000114&#0000116&#0000040&#0000039&#0000088&#0000083&#0000083&#0000039&#0000041>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -250,8 +266,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74&#x3A&#x61&#x6C&#x65&#x72&#x74&#x28&#x27&#x58&#x53&#x53&#x27&#x29>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74&#x3A&#x61&#x6C&#x65&#x72&#x74&#x28&#x27&#x58&#x53&#x53&#x27&#x29>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -270,8 +286,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=\"jav	ascript:alert('XSS');\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=\"jav	ascript:alert('XSS');\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -290,8 +306,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=\"jav&#x09;ascript:alert('XSS');\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=\"jav&#x09;ascript:alert('XSS');\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -310,8 +326,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=\"jav&#x0A;ascript:alert('XSS');\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=\"jav&#x0A;ascript:alert('XSS');\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -330,8 +346,8 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = "<IMG SRC=\"jav&#x0D;ascript:alert('XSS');\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=\"jav&#x0D;ascript:alert('XSS');\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -378,7 +394,7 @@ namespace Ganss.XSS.Tests
 
 
             // Act
-            string htmlFragment = @"<IMG
+            string XmlFragment = @"<IMG
 SRC
 =
 ""
@@ -409,7 +425,7 @@ S
 >
 ";
 
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>\n";
@@ -428,8 +444,8 @@ S
 
 
             // Act
-            string htmlFragment = "<IMG SRC=java\0script:alert(\"XSS\")>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=java\0script:alert(\"XSS\")>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -448,8 +464,8 @@ S
 
 
             // Act
-            string htmlFragment = "<SCR\0IPT>alert(\"XSS\")</SCR\0IPT>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<SCR\0IPT>alert(\"XSS\")</SCR\0IPT>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -468,8 +484,8 @@ S
 
 
             // Act
-            string htmlFragment = "<IMG SRC=\" &#14;  javascript:alert('XSS');\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=\" &#14;  javascript:alert('XSS');\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -477,19 +493,19 @@ S
         }
 
         /// <summary>
-        /// A test for Image Xss vector with half open html
+        /// A test for Image Xss vector with half open Xml
         /// Example <!-- <IMG SRC="javascript:alert('XSS')" -->
         /// </summary>
         [Fact]
-        public void ImageHalfOpenHtmlXSSTest()
+        public void ImageHalfOpenXmlXSSTest()
         {
             // Arrange
             var sanitizer = Sanitizer;
 
 
             // Act
-            string htmlFragment = "<IMG SRC=\"javascript:alert('XSS')\"";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=\"javascript:alert('XSS')\"";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -498,7 +514,7 @@ S
 
         /// <summary>
         /// A test for Image Xss vector with double open angle bracket
-        /// Example <!-- <image src=http://ha.ckers.org/scriptlet.html < -->
+        /// Example <!-- <image src=http://ha.ckers.org/scriptlet.Xml < -->
         /// </summary>
         [Fact]
         public void ImageDoubleOpenAngleBracketXSSTest()
@@ -507,8 +523,8 @@ S
             var sanitizer = Sanitizer;
 
             // Act
-            string htmlFragment = "<image src=http://ha.ckers.org/scriptlet.html <";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<image src=http://ha.ckers.org/scriptlet.Xml <";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -527,8 +543,8 @@ S
 
 
             // Act
-            string htmlFragment = "<div style=\"\";alert('XSS');//\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<div style=\"\";alert('XSS');//\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div style=\"\"></div>";
@@ -547,8 +563,8 @@ S
 
 
             // Act
-            string htmlFragment = "<INPUT TYPE=\"IMAGE\" SRC=\"javascript:alert('XSS');\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<INPUT TYPE=\"IMAGE\" SRC=\"javascript:alert('XSS');\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<input type=\"image\">";
@@ -567,8 +583,8 @@ S
 
 
             // Act
-            string htmlFragment = "<IMG DYNSRC=\"javascript:alert('XSS')\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG DYNSRC=\"javascript:alert('XSS')\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -587,8 +603,8 @@ S
 
 
             // Act
-            string htmlFragment = "<IMG LOWSRC=\"javascript:alert('XSS')\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG LOWSRC=\"javascript:alert('XSS')\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -607,8 +623,8 @@ S
 
 
             // Act
-            string htmlFragment = "<BGSOUND SRC=\"javascript:alert('XSS');\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<BGSOUND SRC=\"javascript:alert('XSS');\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -627,8 +643,8 @@ S
 
 
             // Act
-            string htmlFragment = "<BR SIZE=\"&{alert('XSS')}\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<BR SIZE=\"&{alert('XSS')}\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<BR>";
@@ -647,8 +663,8 @@ S
 
 
             // Act
-            string htmlFragment = "<p STYLE=\"behavior: url(www.ha.ckers.org);\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<p STYLE=\"behavior: url(www.ha.ckers.org);\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             // intentionally keep it failing to get notice when reviewing unit tests so can disucss
@@ -668,8 +684,8 @@ S
 
 
             // Act
-            string htmlFragment = "<IMG SRC='vbscript:msgbox(\"XSS\")'>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC='vbscript:msgbox(\"XSS\")'>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -688,8 +704,8 @@ S
 
 
             // Act
-            string htmlFragment = "<IMG SRC=\"mocha:[code]\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=\"mocha:[code]\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -708,8 +724,8 @@ S
 
 
             // Act
-            string htmlFragment = "<IMG SRC=\"Livescript:[code]\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG SRC=\"Livescript:[code]\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -728,8 +744,8 @@ S
 
 
             // Act
-            string htmlFragment = "<IFRAME SRC=\"javascript:alert('XSS');\"></IFRAME>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IFRAME SRC=\"javascript:alert('XSS');\"></IFRAME>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -748,8 +764,8 @@ S
 
 
             // Act
-            string htmlFragment = "<FRAMESET><FRAME SRC=\"javascript:alert('XSS');\"></FRAMESET>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<FRAMESET><FRAME SRC=\"javascript:alert('XSS');\"></FRAMESET>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -768,8 +784,8 @@ S
 
 
             // Act
-            string htmlFragment = "<TABLE BACKGROUND=\"javascript:alert('XSS')\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<TABLE BACKGROUND=\"javascript:alert('XSS')\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<table></table>";
@@ -788,8 +804,8 @@ S
 
 
             // Act
-            string htmlFragment = "<TABLE><TD BACKGROUND=\"javascript:alert('XSS')\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<TABLE><TD BACKGROUND=\"javascript:alert('XSS')\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<table><tbody><tr><td></td></tr></tbody></table>";
@@ -808,8 +824,8 @@ S
 
 
             // Act
-            string htmlFragment = "<DIV STYLE=\"background-image: url(javascript:alert('XSS'))\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<DIV STYLE=\"background-image: url(javascript:alert('XSS'))\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -828,8 +844,8 @@ S
 
 
             // Act
-            string htmlFragment = @"<DIV STYLE=""background-image:\0075\0072\006C\0028'\006a\0061\0076\0061\0073\0063\0072\0069\0070\0074\003a\0061\006c\0065\0072\0074\0028\0027\0058\0053\0053\0027\0029'\0029"">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = @"<DIV STYLE=""background-image:\0075\0072\006C\0028'\006a\0061\0076\0061\0073\0063\0072\0069\0070\0074\003a\0061\006c\0065\0072\0074\0028\0027\0058\0053\0053\0027\0029'\0029"">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -848,8 +864,8 @@ S
 
 
             // Act
-            string htmlFragment = "<DIV STYLE=\"background-image: url(&#1;javascript:alert('XSS'))\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<DIV STYLE=\"background-image: url(&#1;javascript:alert('XSS'))\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -868,8 +884,8 @@ S
 
 
             // Act
-            string htmlFragment = "<DIV STYLE=\"width: expression(alert('XSS'));\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<DIV STYLE=\"width: expression(alert('XSS'));\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -888,8 +904,8 @@ S
 
 
             // Act
-            string htmlFragment = "<IMG STYLE=\"xss:expr/*XSS*/ession(alert('XSS'))\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<IMG STYLE=\"xss:expr/*XSS*/ession(alert('XSS'))\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<img>";
@@ -908,8 +924,8 @@ S
 
 
             // Act
-            string htmlFragment = "exp/*<A STYLE='no\\xss:noxss(\"*//*\");xss:&#101;x&#x2F;*XSS*//*/*/pression(alert(\"XSS\"))'>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "exp/*<A STYLE='no\\xss:noxss(\"*//*\");xss:&#101;x&#x2F;*XSS*//*/*/pression(alert(\"XSS\"))'>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "exp/*<a></a>";
@@ -928,8 +944,8 @@ S
 
 
             // Act
-            string htmlFragment = "<BASE HREF=\"javascript:alert('XSS');//\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<BASE HREF=\"javascript:alert('XSS');//\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -948,8 +964,8 @@ S
 
 
             // Act
-            string htmlFragment = "<EMBED SRC=\"http://ha.ckers.org/xss.swf\" AllowScriptAccess=\"always\"></EMBED>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<EMBED SRC=\"http://ha.ckers.org/xss.swf\" AllowScriptAccess=\"always\"></EMBED>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -968,8 +984,8 @@ S
 
 
             // Act
-            string htmlFragment = "<EMBED SRC=\"data:image/svg+xml;base64,PHN2ZyB4bWxuczpzdmc9Imh0dH A6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcv MjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hs aW5rIiB2ZXJzaW9uPSIxLjAiIHg9IjAiIHk9IjAiIHdpZHRoPSIxOTQiIGhlaWdodD0iMjAw IiBpZD0ieHNzIj48c2NyaXB0IHR5cGU9InRleHQvZWNtYXNjcmlwdCI+YWxlcnQoIlh TUyIpOzwvc2NyaXB0Pjwvc3ZnPg==\" type=\"image/svg+xml\" AllowScriptAccess=\"always\"></EMBED>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<EMBED SRC=\"data:image/svg+xml;base64,PHN2ZyB4bWxuczpzdmc9Imh0dH A6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcv MjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hs aW5rIiB2ZXJzaW9uPSIxLjAiIHg9IjAiIHk9IjAiIHdpZHRoPSIxOTQiIGhlaWdodD0iMjAw IiBpZD0ieHNzIj48c2NyaXB0IHR5cGU9InRleHQvZWNtYXNjcmlwdCI+YWxlcnQoIlh TUyIpOzwvc2NyaXB0Pjwvc3ZnPg==\" type=\"image/svg+xml\" AllowScriptAccess=\"always\"></EMBED>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -978,7 +994,7 @@ S
 
         /// <summary>
         /// A test for XML namespace
-        /// Example <!-- <HTML xmlns:xss>  <?import namespace="xss" implementation="http://ha.ckers.org/xss.htc">  <xss:xss>XSS</xss:xss></HTML> -->
+        /// Example <!-- <Xml xmlns:xss>  <?import namespace="xss" implementation="http://ha.ckers.org/xss.htc">  <xss:xss>XSS</xss:xss></Xml> -->
         /// </summary>
         [Fact]
         public void XmlNamespaceXSSTest()
@@ -988,8 +1004,8 @@ S
 
 
             // Act
-            string htmlFragment = "<HTML xmlns:xss><?import namespace=\"xss\" implementation=\"http://ha.ckers.org/xss.htc\"><xss:xss>XSS</xss:xss></HTML>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Xml xmlns:xss><?import namespace=\"xss\" implementation=\"http://ha.ckers.org/xss.htc\"><xss:xss>XSS</xss:xss></Xml>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -998,7 +1014,7 @@ S
 
         /// <summary>
         /// A test for XML with CData
-        /// Example <!-- <XML ID=I><X><C><![CDATA[<IMG SRC="javas]]><![CDATA[cript:alert('XSS');">]]></C></X></xml><SPAN DATASRC=#I DATAFLD=C DATAFORMATAS=HTML></SPAN> -->
+        /// Example <!-- <XML ID=I><X><C><![CDATA[<IMG SRC="javas]]><![CDATA[cript:alert('XSS');">]]></C></X></xml><SPAN DATASRC=#I DATAFLD=C DATAFORMATAS=Xml></SPAN> -->
         /// </summary>
         [Fact]
         public void XmlWithCDataXSSTest()
@@ -1008,8 +1024,8 @@ S
 
 
             // Act
-            string htmlFragment = "<XML ID=I><X><C><![CDATA[<IMG SRC=\"javas]]><![CDATA[cript:alert('XSS');\">]]></C></X></xml><SPAN DATASRC=#I DATAFLD=C DATAFORMATAS=HTML></SPAN>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<XML ID=I><X><C><![CDATA[<IMG SRC=\"javas]]><![CDATA[cript:alert('XSS');\">]]></C></X></xml><SPAN DATASRC=#I DATAFLD=C DATAFORMATAS=Xml></SPAN>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<SPAN></SPAN>";
@@ -1027,8 +1043,8 @@ S
 
 
             // Act
-            string htmlFragment = "<XML ID=\"xss\"><I><B>&lt;IMG SRC=\"javas<!-- -->cript:alert('XSS')\"&gt;</B></I></XML><SPAN DATASRC=\"#xss\" DATAFLD=\"B\" DATAFORMATAS=\"HTML\"></SPAN>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<XML ID=\"xss\"><I><B>&lt;IMG SRC=\"javas<!-- -->cript:alert('XSS')\"&gt;</B></I></XML><SPAN DATASRC=\"#xss\" DATAFLD=\"B\" DATAFORMATAS=\"Xml\"></SPAN>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<SPAN></SPAN>";
@@ -1037,7 +1053,7 @@ S
 
         /// <summary>
         /// A test for XML with Embedded script
-        /// Example <!-- <XML SRC="xsstest.xml" ID=I></XML><SPAN DATASRC=#I DATAFLD=C DATAFORMATAS=HTML></SPAN> -->
+        /// Example <!-- <XML SRC="xsstest.xml" ID=I></XML><SPAN DATASRC=#I DATAFLD=C DATAFORMATAS=Xml></SPAN> -->
         /// </summary>
         [Fact]
         public void XmlWithEmbeddedScriptXSSTest()
@@ -1047,8 +1063,8 @@ S
 
 
             // Act
-            string htmlFragment = "<XML SRC=\"xsstest.xml\" ID=I></XML><SPAN DATASRC=#I DATAFLD=C DATAFORMATAS=HTML></SPAN>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<XML SRC=\"xsstest.xml\" ID=I></XML><SPAN DATASRC=#I DATAFLD=C DATAFORMATAS=Xml></SPAN>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<SPAN></SPAN>";
@@ -1056,19 +1072,19 @@ S
         }
 
         /// <summary>
-        /// A test for Html + Time
-        /// Example <!-- <HTML><BODY><?xml:namespace prefix="t" ns="urn:schemas-microsoft-com:time"><?import namespace="t" implementation="#default#time2"><t:set attributeName="innerHTML" to="XSS&lt;SCRIPT DEFER&gt;alert(&quot;XSS&quot;)&lt;/SCRIPT&gt;"></BODY></HTML> -->
+        /// A test for Xml + Time
+        /// Example <!-- <Xml><BODY><?xml:namespace prefix="t" ns="urn:schemas-microsoft-com:time"><?import namespace="t" implementation="#default#time2"><t:set attributeName="innerXml" to="XSS&lt;SCRIPT DEFER&gt;alert(&quot;XSS&quot;)&lt;/SCRIPT&gt;"></BODY></Xml> -->
         /// </summary>
         [Fact]
-        public void HtmlPlusTimeXSSTest()
+        public void XmlPlusTimeXSSTest()
         {
             // Arrange
             var sanitizer = Sanitizer;
 
 
             // Act
-            string htmlFragment = "<HTML><BODY><?xml:namespace prefix=\"t\" ns=\"urn:schemas-microsoft-com:time\"><?import namespace=\"t\" implementation=\"#default#time2\"><t:set attributeName=\"innerHTML\" to=\"XSS&lt;SCRIPT DEFER&gt;alert(&quot;XSS&quot;)&lt;/SCRIPT&gt;\"></BODY></HTML>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Xml><BODY><?xml:namespace prefix=\"t\" ns=\"urn:schemas-microsoft-com:time\"><?import namespace=\"t\" implementation=\"#default#time2\"><t:set attributeName=\"innerXml\" to=\"XSS&lt;SCRIPT DEFER&gt;alert(&quot;XSS&quot;)&lt;/SCRIPT&gt;\"></BODY></Xml>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "";
@@ -1087,8 +1103,8 @@ S
 
 
             // Act
-            string htmlFragment = "<A HREF=\"javascript:document.location='http://www.google.com/'\">XSS</A>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<A HREF=\"javascript:document.location='http://www.google.com/'\">XSS</A>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<a>XSS</a>";
@@ -1107,8 +1123,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT SRC=http://ha.ckers.org/xss.js></SCRIPT>\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT SRC=http://ha.ckers.org/xss.js></SCRIPT>\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -1127,8 +1143,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: expression(<SCRIPT SRC=http://ha.ckers.org/xss.js></SCRIPT>)\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: expression(<SCRIPT SRC=http://ha.ckers.org/xss.js></SCRIPT>)\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -1147,8 +1163,8 @@ S
 
 
             // Act
-            string htmlFragment = "<A HREF=\"http://www.codeplex.com?url=<SCRIPT/XSS SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>\">XSS</A>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<A HREF=\"http://www.codeplex.com?url=<SCRIPT/XSS SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>\">XSS</A>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<a href=\"http://www.codeplex.com?url=&lt;SCRIPT/XSS SRC=\">\"&gt;XSS</a>";
@@ -1167,8 +1183,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT/XSS SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT/XSS SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div>\"&gt;</div>";
@@ -1187,8 +1203,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: expression(<SCRIPT/XSS SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>)\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: expression(<SCRIPT/XSS SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>)\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div>)\"&gt;</div>";
@@ -1207,8 +1223,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT/SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT/SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div>\"&gt;</div>";
@@ -1227,8 +1243,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: expression(<SCRIPT/SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>)\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: expression(<SCRIPT/SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>)\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div>)\"&gt;</div>";
@@ -1247,8 +1263,8 @@ S
 
 
             // Act
-            string htmlFragment = "<A HREF=\"http://www.codeplex.com?url=<<SCRIPT>alert(\"XSS\");//<</SCRIPT>\">XSS</A>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<A HREF=\"http://www.codeplex.com?url=<<SCRIPT>alert(\"XSS\");//<</SCRIPT>\">XSS</A>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<a href=\"http://www.codeplex.com?url=&lt;&lt;SCRIPT&gt;alert(\">\"&gt;XSS</a>";
@@ -1267,8 +1283,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<<SCRIPT>alert(\"XSS\");//<</SCRIPT>\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<<SCRIPT>alert(\"XSS\");//<</SCRIPT>\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div>\"&gt;</div>";
@@ -1286,8 +1302,8 @@ S
             var sanitizer = Sanitizer;
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: expression(<<SCRIPT>alert(\"XSS\");//<</SCRIPT>)\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: expression(<<SCRIPT>alert(\"XSS\");//<</SCRIPT>)\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div>)\"&gt;</div>";
@@ -1306,8 +1322,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT SRC=http://ha.ckers.org/xss.js?<B>\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT SRC=http://ha.ckers.org/xss.js?<B>\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -1326,8 +1342,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: expression(<SCRIPT SRC=http://ha.ckers.org/xss.js?<B>)\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: expression(<SCRIPT SRC=http://ha.ckers.org/xss.js?<B>)\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -1346,8 +1362,8 @@ S
 
 
             // Act
-            string htmlFragment = "<A HREF=\"http://www.codeplex.com?url=<SCRIPT SRC=//ha.ckers.org/.j>\">XSS</A>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<A HREF=\"http://www.codeplex.com?url=<SCRIPT SRC=//ha.ckers.org/.j>\">XSS</A>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<a href=\"http://www.codeplex.com?url=&lt;SCRIPT SRC=//ha.ckers.org/.j&gt;\">XSS</a>";
@@ -1366,8 +1382,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT SRC=//ha.ckers.org/.j>\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT SRC=//ha.ckers.org/.j>\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -1386,8 +1402,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: expression(<SCRIPT SRC=//ha.ckers.org/.j>)\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: expression(<SCRIPT SRC=//ha.ckers.org/.j>)\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -1406,8 +1422,8 @@ S
 
 
             // Act
-            string htmlFragment = "<A HREF=\"http://www.codeplex.com?url=<SCRIPT>a=/XSS/alert(a.source)</SCRIPT>\">XSS</A>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<A HREF=\"http://www.codeplex.com?url=<SCRIPT>a=/XSS/alert(a.source)</SCRIPT>\">XSS</A>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<a href=\"http://www.codeplex.com?url=&lt;SCRIPT&gt;a=/XSS/alert(a.source)&lt;/SCRIPT&gt;\">XSS</a>";
@@ -1426,8 +1442,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT>a=/XSS/alert(a.source)</SCRIPT>\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT>a=/XSS/alert(a.source)</SCRIPT>\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -1446,8 +1462,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: expression(<SCRIPT>a=/XSS/alert(a.source)</SCRIPT>)\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: expression(<SCRIPT>a=/XSS/alert(a.source)</SCRIPT>)\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -1466,8 +1482,8 @@ S
 
 
             // Act
-            string htmlFragment = "<A HREF=\"http://www.codeplex.com?url=¼script¾alert(¢XSS¢)¼/script¾\">XSS</A>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<A HREF=\"http://www.codeplex.com?url=¼script¾alert(¢XSS¢)¼/script¾\">XSS</A>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<a href=\"http://www.codeplex.com?url=¼script¾alert(¢XSS¢)¼/script¾\">XSS</a>";
@@ -1485,8 +1501,8 @@ S
 
 
             // Act
-            string htmlFragment = "<A HREF=\"http://www.codeplex.com?url=<!--[if gte IE 4]><SCRIPT>alert('XSS');</SCRIPT><![endif]-->\">XSS</A>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<A HREF=\"http://www.codeplex.com?url=<!--[if gte IE 4]><SCRIPT>alert('XSS');</SCRIPT><![endif]-->\">XSS</A>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<a href=\"http://www.codeplex.com?url=&lt;!--[if gte IE 4]&gt;&lt;SCRIPT&gt;alert('XSS');&lt;/SCRIPT&gt;&lt;![endif]--&gt;\">XSS</a>";
@@ -1519,8 +1535,8 @@ S
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<!--[if gte IE 4]><SCRIPT>alert('XSS');</SCRIPT><![endif]-->\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<!--[if gte IE 4]><SCRIPT>alert('XSS');</SCRIPT><![endif]-->\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = @"<div></div>";
@@ -1528,19 +1544,19 @@ S
         }
 
         /// <summary>
-        /// A test for AnchorTag with Html Quotes Encapsulation 1 xss
+        /// A test for AnchorTag with Xml Quotes Encapsulation 1 xss
         /// Example <!-- <A HREF="http://www.codeplex.com?url=<SCRIPT a=">" SRC="http://ha.ckers.org/xss.js"></SCRIPT>">XSS</A> -->
         /// </summary>
         [Fact]
-        public void AnchorTagHtmlQuotesEncapsulation1XSSTest()
+        public void AnchorTagXmlQuotesEncapsulation1XSSTest()
         {
             // Arrange
             var sanitizer = Sanitizer;
 
 
             // Act
-            string htmlFragment = "<A HREF=\"http://www.codeplex.com?url=<SCRIPT a=\">\" SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>\">XSS</A>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<A HREF=\"http://www.codeplex.com?url=<SCRIPT a=\">\" SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>\">XSS</A>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<a href=\"http://www.codeplex.com?url=&lt;SCRIPT a=\">\" SRC=\"http://ha.ckers.org/xss.js\"&gt;\"&gt;XSS</a>";
@@ -1548,19 +1564,19 @@ S
         }
 
         /// <summary>
-        /// A test for Div with Html Quotes Encapsulation 1 xss
+        /// A test for Div with Xml Quotes Encapsulation 1 xss
         /// Example <!-- <Div style="background-color: http://www.codeplex.com?url=<SCRIPT a=">" SRC="http://ha.ckers.org/xss.js"></SCRIPT>"> -->
         /// </summary>
         [Fact]
-        public void DivHtmlQuotesEncapsulation1XSSTest()
+        public void DivXmlQuotesEncapsulation1XSSTest()
         {
             // Arrange
             var sanitizer = Sanitizer;
 
 
             // Act
-            string htmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT a=\">\" SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<Div style=\"background-color: http://www.codeplex.com?url=<SCRIPT a=\">\" SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div>\" SRC=\"http://ha.ckers.org/xss.js\"&gt;\"&gt;</div>";
@@ -1577,8 +1593,8 @@ S
             var sanitizer = Sanitizer;
 
             // Act
-            string htmlFragment = "<div style=\"background-color: test\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<div style=\"background-color: test\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div></div>";
@@ -1595,8 +1611,8 @@ S
             var sanitizer = Sanitizer;
 
             // Act
-            string htmlFragment = "<div style=\"background-color: test;\">Test<img src=\"http://www.example.com/test.gif\" style=\"background-image: url(http://www.example.com/bg.jpg); margin: 10px\"></div>";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<div style=\"background-color: test;\">Test<img src=\"http://www.example.com/test.gif\" style=\"background-image: url(http://www.example.com/bg.jpg); margin: 10px\"></div>";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<div>Test<img src=\"http://www.example.com/test.gif\" style=\"background-image: url(&quot;http://www.example.com/bg.jpg&quot;); margin: 10px\"></div>";
@@ -1611,93 +1627,93 @@ S
         {
             var sanitizer = Sanitizer;
 
-            var html = @"<SCRIPT/SRC=""http://ha.ckers.org/xss.js""></SCRIPT>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"<SCRIPT/SRC=""http://ha.ckers.org/xss.js""></SCRIPT>";
+            var actual = sanitizer.Sanitize(Xml);
             var expected = "";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<DIV STYLE=""padding: &#49;px; mar/*xss*/gin: ex/*XSS*/pression(alert('xss')); background-image:\0075\0072\006C\0028\0022\006a\0061\0076\0061\0073\0063\0072\0069\0070\0074\003a\0061\006c\0065\0072\0074\0028\0027\0058\0053\0053\0027\0029\0022\0029"">";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<DIV STYLE=""padding: &#49;px; mar/*xss*/gin: ex/*XSS*/pression(alert('xss')); background-image:\0075\0072\006C\0028\0022\006a\0061\0076\0061\0073\0063\0072\0069\0070\0074\003a\0061\006c\0065\0072\0074\0028\0027\0058\0053\0053\0027\0029\0022\0029"">";
+            actual = sanitizer.Sanitize(Xml);
             expected = @"<div style=""padding: 1px""></div>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<!--[if gte IE 4]><SCRIPT>alert('XSS');</SCRIPT><![endif]--><!-- Comment -->";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<!--[if gte IE 4]><SCRIPT>alert('XSS');</SCRIPT><![endif]--><!-- Comment -->";
+            actual = sanitizer.Sanitize(Xml);
             expected = "";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<STYLE>@im\port'\ja\vasc\ript:alert(""XSS"")';</STYLE>";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<STYLE>@im\port'\ja\vasc\ript:alert(""XSS"")';</STYLE>";
+            actual = sanitizer.Sanitize(Xml);
             expected = "";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<div onload!#$%&()*~+-_.,:;?@[/|\]^`=alert(""XSS"")>";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<div onload!#$%&()*~+-_.,:;?@[/|\]^`=alert(""XSS"")>";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<div></div>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<SCRIPT/XSS SRC=""http://ha.ckers.org/xss.js""></SCRIPT>";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<SCRIPT/XSS SRC=""http://ha.ckers.org/xss.js""></SCRIPT>";
+            actual = sanitizer.Sanitize(Xml);
             expected = "";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = "<IMG SRC=javascript:alert(\"XSS\")>\"";
-            actual = sanitizer.Sanitize(html);
+            Xml = "<IMG SRC=javascript:alert(\"XSS\")>\"";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<img>\"";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = "<IMG SRC=java\0script:alert(\"XSS\")>\"";
-            actual = sanitizer.Sanitize(html);
+            Xml = "<IMG SRC=java\0script:alert(\"XSS\")>\"";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<img>\"";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<IMG SRC=""jav&#x0D;ascript:alert('XSS');"">";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<IMG SRC=""jav&#x0D;ascript:alert('XSS');"">";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<img>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<IMG SRC=""jav&#x0A;ascript:alert('XSS');"">";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<IMG SRC=""jav&#x0A;ascript:alert('XSS');"">";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<img>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<IMG SRC=""jav&#x09;ascript:alert('XSS');"">";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<IMG SRC=""jav&#x09;ascript:alert('XSS');"">";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<img>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<div style=""background-color: red""><sCRipt>hallo</scripT></div><a href=""#"">Test</a>";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<div style=""background-color: red""><sCRipt>hallo</scripT></div><a href=""#"">Test</a>";
+            actual = sanitizer.Sanitize(Xml);
             expected = @"<div style=""background-color: rgba(255, 0, 0, 1)""></div><a href=""#"">Test</a>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<IMG SRC=""jav	ascript:alert('XSS');"">";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<IMG SRC=""jav	ascript:alert('XSS');"">";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<img>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<IMG SRC="" &#14;  javascript:alert('XSS');"">";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<IMG SRC="" &#14;  javascript:alert('XSS');"">";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<img>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<IMG SRC=&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#88;&#83;&#83;&#39;&#41;>";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<IMG SRC=&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#88;&#83;&#83;&#39;&#41;>";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<img>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<IMG SRC=&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105&#0000112&#0000116&#0000058&#0000097&#0000108&#0000101&#0000114&#0000116&#0000040&#0000039&#0000088&#0000083&#0000083&#0000039&#0000041>";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<IMG SRC=&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105&#0000112&#0000116&#0000058&#0000097&#0000108&#0000101&#0000114&#0000116&#0000040&#0000039&#0000088&#0000083&#0000083&#0000039&#0000041>";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<img>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<IMG SRC=&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74&#x3A&#x61&#x6C&#x65&#x72&#x74&#x28&#x27&#x58&#x53&#x53&#x27&#x29>";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<IMG SRC=&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74&#x3A&#x61&#x6C&#x65&#x72&#x74&#x28&#x27&#x58&#x53&#x53&#x27&#x29>";
+            actual = sanitizer.Sanitize(Xml);
             expected = "<img>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = "<script>alert('xss')</script><div onload=\"alert('xss')\" style=\"background-color: red\">Test<img src=\"test.gif\" style=\"background-image: url(javascript:alert('xss')); margin: 10px\"></div>";
-            actual = sanitizer.Sanitize(html, "http://www.example.com");
+            Xml = "<script>alert('xss')</script><div onload=\"alert('xss')\" style=\"background-color: red\">Test<img src=\"test.gif\" style=\"background-image: url(javascript:alert('xss')); margin: 10px\"></div>";
+            actual = sanitizer.Sanitize(Xml, "http://www.example.com");
             expected = @"<div style=""background-color: rgba(255, 0, 0, 1)"">Test<img src=""http://www.example.com/test.gif"" style=""margin: 10px""></div>";
             Assert.Equal(expected, actual, ignoreCase: true);
         }
@@ -1710,22 +1726,22 @@ S
         {
             var sanitizer = Sanitizer;
 
-            var html = @"<bla>Hallo</bla>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"<bla>Hallo</bla>";
+            var actual = sanitizer.Sanitize(Xml);
             var expected = "";
             Assert.Equal(expected, actual, ignoreCase: true);
         }
 
         /// <summary>
-        /// Tests disallowed HTML attributes.
+        /// Tests disallowed Xml attributes.
         /// </summary>
         [Fact]
         public void DisallowedAttributeTest()
         {
             var sanitizer = Sanitizer;
 
-            var html = @"<div bla=""test"">Test</div>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"<div bla=""test"">Test</div>";
+            var actual = sanitizer.Sanitize(Xml);
             var expected = @"<div>Test</div>";
             Assert.Equal(expected, actual, ignoreCase: true);
         }
@@ -1738,18 +1754,18 @@ S
         {
             var sanitizer = Sanitizer;
 
-            var html = @"<a href=""mailto:test@example.com"">test</a>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"<a href=""mailto:test@example.com"">test</a>";
+            var actual = sanitizer.Sanitize(Xml);
             var expected = @"<a>test</a>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<a href=""http:xxx"">test</a>";
-            actual = sanitizer.Sanitize(html);
+            Xml = @"<a href=""http:xxx"">test</a>";
+            actual = sanitizer.Sanitize(Xml);
             expected = @"<a href=""http:xxx"">test</a>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<a href=""folder/file.jpg"">test</a>";
-            actual = sanitizer.Sanitize(html, @"http://www.example.com");
+            Xml = @"<a href=""folder/file.jpg"">test</a>";
+            actual = sanitizer.Sanitize(Xml, @"http://www.example.com");
             expected = @"<a href=""http://www.example.com/folder/file.jpg"">test</a>";
             Assert.Equal(expected, actual, ignoreCase: true);
         }
@@ -1762,8 +1778,8 @@ S
         {
             var sanitizer = Sanitizer;
 
-            var html = @"<div style=""margin: 8px; bla: 1px"">test</div>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"<div style=""margin: 8px; bla: 1px"">test</div>";
+            var actual = sanitizer.Sanitize(Xml);
             var expected = @"<div style=""margin: 8px"">test</div>";
             Assert.Equal(expected, actual, ignoreCase: true);
         }
@@ -1776,13 +1792,13 @@ S
         {
             var sanitizer = Sanitizer;
 
-            var html = @"<div style=""padding: 10px; background-image: url(mailto:test@example.com)""></div>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"<div style=""padding: 10px; background-image: url(mailto:test@example.com)""></div>";
+            var actual = sanitizer.Sanitize(Xml);
             var expected = @"<div style=""padding: 10px""></div>";
             Assert.Equal(expected, actual, ignoreCase: true);
 
-            html = @"<div style=""padding: 10px; background-image: url(folder/file.jpg)""></div>";
-            actual = sanitizer.Sanitize(html, @"http://www.example.com");
+            Xml = @"<div style=""padding: 10px; background-image: url(folder/file.jpg)""></div>";
+            actual = sanitizer.Sanitize(Xml, @"http://www.example.com");
             expected = @"<div style=""padding: 10px; background-image: url(&quot;http://www.example.com/folder/file.jpg&quot;)""></div>";
             Assert.Equal(expected, actual, ignoreCase: true);
         }
@@ -1793,80 +1809,80 @@ S
         public void SanitizeUnchangedTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<a href=""#"">fo<br />o</a>";
-            Assert.Equal(@"<a href=""#"">fo<br>o</a>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<a href=""#"">fo<br />o</a>";
+            Assert.Equal(@"<a href=""#"">fo<br>o</a>", sanitizer.Sanitize(Xml), ignoreCase: true);
 
-            html = @"<a href=""#with:colon"">foo</a>";
-            Assert.Equal(html, sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<a href=""#with:colon"">foo</a>";
+            Assert.Equal(Xml, sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeEscapeTextTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<a href=""#"">fo&amp;</a>";
-            Assert.Equal(@"<a href=""#"">fo&amp;</a>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<a href=""#"">fo&amp;</a>";
+            Assert.Equal(@"<a href=""#"">fo&amp;</a>", sanitizer.Sanitize(Xml), ignoreCase: true);
 
-            html = @"<a href=""#"">&lt;foo&gt;</a>";
-            Assert.Equal(@"<a href=""#"">&lt;foo&gt;</a>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<a href=""#"">&lt;foo&gt;</a>";
+            Assert.Equal(@"<a href=""#"">&lt;foo&gt;</a>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeEntityrefTextTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<a href=""#"">fo&ouml;</a>";
-            Assert.Equal(@"<a href=""#"">foö</a>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<a href=""#"">fo&ouml;</a>";
+            Assert.Equal(@"<a href=""#"">foö</a>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeEscapeAttrTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div title=""&lt;foo&gt;""></div>";
-            Assert.Equal(@"<div title=""&lt;foo&gt;""></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div title=""&lt;foo&gt;""></div>";
+            Assert.Equal(@"<div title=""&lt;foo&gt;""></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeCloseEmptyTagTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<a href=""#"">fo<br>o</a>";
-            Assert.Equal(@"<a href=""#"">fo<br>o</a>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<a href=""#"">fo<br>o</a>";
+            Assert.Equal(@"<a href=""#"">fo<br>o</a>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeInvalidEntityTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"&junk;";
-            Assert.Equal(@"&amp;junk;", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"&junk;";
+            Assert.Equal(@"&amp;junk;", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeRemoveScriptElemTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<script>alert(""Foo"")</script>";
-            Assert.Equal(@"", sanitizer.Sanitize(html), ignoreCase: true);
-            html = @"<SCRIPT SRC=""http://example.com/""></SCRIPT>";
-            Assert.Equal(@"", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<script>alert(""Foo"")</script>";
+            Assert.Equal(@"", sanitizer.Sanitize(Xml), ignoreCase: true);
+            Xml = @"<SCRIPT SRC=""http://example.com/""></SCRIPT>";
+            Assert.Equal(@"", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeRemoveOnclickAttrTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div onclick=\'alert(""foo"")\' />";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div onclick=\'alert(""foo"")\' />";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeRemoveCommentsTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div><!-- conditional comment crap --></div>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div><!-- conditional comment crap --></div>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
@@ -1874,35 +1890,35 @@ S
         {
             var sanitizer = Sanitizer;
             // Inline style with url() using javascript: scheme
-            var html = @"<DIV STYLE='background-image: url(javascript:alert(""foo""))'>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<DIV STYLE='background-image: url(javascript:alert(""foo""))'>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // Inline style with url() using javascript: scheme, using control char
-            html = @"<DIV STYLE='background-image: url(&#1;javascript:alert(""foo""))'>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<DIV STYLE='background-image: url(&#1;javascript:alert(""foo""))'>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // Inline style with url() using javascript: scheme, in quotes
-            html = @"<DIV STYLE='background-image: url(""javascript:alert(foo)"")'>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<DIV STYLE='background-image: url(""javascript:alert(foo)"")'>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // IE expressions in CSS not allowed
-            html = @"<DIV STYLE='width: expression(alert(""foo""));'>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
-            html = @"<DIV STYLE='width: e/**/xpression(alert(""foo""));'>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
-            html = @"<DIV STYLE='background-image: url(javascript:alert(""foo""));color: #fff'>";
-            Assert.Equal(@"<div style=""color: rgba(255, 255, 255, 1)""></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<DIV STYLE='width: expression(alert(""foo""));'>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
+            Xml = @"<DIV STYLE='width: e/**/xpression(alert(""foo""));'>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
+            Xml = @"<DIV STYLE='background-image: url(javascript:alert(""foo""));color: #fff'>";
+            Assert.Equal(@"<div style=""color: rgba(255, 255, 255, 1)""></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
 
             // Inline style with url() using javascript: scheme, using unicode
             // escapes
-            html = @"<DIV STYLE='background-image: \75rl(javascript:alert(""foo""))'>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
-            html = @"<DIV STYLE='background-image: \000075rl(javascript:alert(""foo""))'>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
-            html = @"<DIV STYLE='background-image: \75 rl(javascript:alert(""foo""))'>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
-            html = @"<DIV STYLE='background-image: \000075 rl(javascript:alert(""foo""))'>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
-            html = @"<DIV STYLE='background-image: \000075
+            Xml = @"<DIV STYLE='background-image: \75rl(javascript:alert(""foo""))'>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
+            Xml = @"<DIV STYLE='background-image: \000075rl(javascript:alert(""foo""))'>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
+            Xml = @"<DIV STYLE='background-image: \75 rl(javascript:alert(""foo""))'>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
+            Xml = @"<DIV STYLE='background-image: \000075 rl(javascript:alert(""foo""))'>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
+            Xml = @"<DIV STYLE='background-image: \000075
 rl(javascript:alert(""foo""))'>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
@@ -1910,126 +1926,126 @@ rl(javascript:alert(""foo""))'>";
         {
             var sanitizer = Sanitizer;
             // The position property is not allowed
-            var html = @"<div style=""position:absolute;top:0""></div>";
-            Assert.Equal(@"<div style=""top: 0""></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""position:absolute;top:0""></div>";
+            Assert.Equal(@"<div style=""top: 0""></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // Normal margins get passed through
-            html = @"<div style=""margin:10px 20px""></div>";
-            Assert.Equal(@"<div style=""margin: 10px 20px""></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<div style=""margin:10px 20px""></div>";
+            Assert.Equal(@"<div style=""margin: 10px 20px""></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeRemoveSrcJavascriptTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<img src=\'javascript:alert(""foo"")\'>";
-            Assert.Equal(@"<img>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<img src=\'javascript:alert(""foo"")\'>";
+            Assert.Equal(@"<img>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // Case-insensitive protocol matching
-            html = @"<IMG SRC=\'JaVaScRiPt:alert(""foo"")\'>";
-            Assert.Equal(@"<img>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<IMG SRC=\'JaVaScRiPt:alert(""foo"")\'>";
+            Assert.Equal(@"<img>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // Grave accents (not parsed)
             // Protocol encoded using UTF-8 numeric entities
-            html = @"<IMG SRC=\'&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;alert(""foo"")\'>";
-            Assert.Equal(@"<img>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<IMG SRC=\'&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;alert(""foo"")\'>";
+            Assert.Equal(@"<img>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // Protocol encoded using UTF-8 numeric entities without a semicolon
             // (which is allowed because the max number of digits is used)
-            html = @"<IMG SRC=\'&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105&#0000112&#0000116&#0000058alert(""foo"")\'>";
-            Assert.Equal(@"<img>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<IMG SRC=\'&#0000106&#0000097&#0000118&#0000097&#0000115&#0000099&#0000114&#0000105&#0000112&#0000116&#0000058alert(""foo"")\'>";
+            Assert.Equal(@"<img>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // Protocol encoded using UTF-8 numeric hex entities without a semicolon
             // (which is allowed because the max number of digits is used)
-            html = @"<IMG SRC=\'&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74&#x3A;alert(""foo"")\'>";
-            Assert.Equal(@"<img>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<IMG SRC=\'&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74&#x3A;alert(""foo"")\'>";
+            Assert.Equal(@"<img>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // Embedded tab character in protocol
-            html = @"<IMG SRC=\'jav\tascript:alert(""foo"");\'>";
-            Assert.Equal(@"<img>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<IMG SRC=\'jav\tascript:alert(""foo"");\'>";
+            Assert.Equal(@"<img>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // Embedded tab character in protocol, but encoded this time
-            html = @"<IMG SRC=\'jav&#x09;ascript:alert(""foo"");\'>";
-            Assert.Equal(@"<img>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<IMG SRC=\'jav&#x09;ascript:alert(""foo"");\'>";
+            Assert.Equal(@"<img>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeExpressionTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div style=""top:expression(alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""top:expression(alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void CapitalExpressionTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div style=""top:EXPRESSION(alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""top:EXPRESSION(alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeUrlWithJavascriptTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div style=""background-image:url(javascript:alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""background-image:url(javascript:alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeCapitalUrlWithJavascriptTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div style=""background-image:URL(javascript:alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""background-image:URL(javascript:alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeUnicodeEscapesTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div style=""top:exp\72 ess\000069 on(alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""top:exp\72 ess\000069 on(alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeBackslashWithoutHexTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div style=""top:e\xp\ression(alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
-            html = @"<div style=""top:e\\xp\\ression(alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""top:e\xp\ression(alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
+            Xml = @"<div style=""top:e\\xp\\ression(alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeUnsafePropsTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div style=""POSITION:RELATIVE"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""POSITION:RELATIVE"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
 
-            html = @"<div style=""behavior:url(test.htc)"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<div style=""behavior:url(test.htc)"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
 
-            html = @"<div style=""-ms-behavior:url(test.htc) url(#obj)"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<div style=""-ms-behavior:url(test.htc) url(#obj)"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
 
-            html = @"<div style=""-o-link:'javascript:alert(1)';-o-link-source:current"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<div style=""-o-link:'javascript:alert(1)';-o-link-source:current"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
 
-            html = @"<div style=""-moz-binding:url(xss.xbl)"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<div style=""-moz-binding:url(xss.xbl)"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeCssHackTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div style=""*position:static"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""*position:static"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizePropertyNameTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div style=""display:none;border-left-color:red;userDefined:1;-moz-user-selct:-moz-all"">prop</div>";
-            Assert.Equal(@"<div style=""display: none; border-left-color: rgba(255, 0, 0, 1)"">prop</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""display:none;border-left-color:red;userDefined:1;-moz-user-selct:-moz-all"">prop</div>";
+            Assert.Equal(@"<div style=""display: none; border-left-color: rgba(255, 0, 0, 1)"">prop</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
@@ -2037,14 +2053,14 @@ rl(javascript:alert(""foo""))'>";
         {
             var sanitizer = Sanitizer;
             // Fullwidth small letters
-            var html = @"<div style=""top:ｅｘｐｒｅｓｓｉｏｎ(alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""top:ｅｘｐｒｅｓｓｉｏｎ(alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // Fullwidth capital letters
-            html = @"<div style=""top:ＥＸＰＲＥＳＳＩＯＮ(alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<div style=""top:ＥＸＰＲＥＳＳＩＯＮ(alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
             // IPA extensions
-            html = @"<div style=""top:expʀessɪoɴ(alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            Xml = @"<div style=""top:expʀessɪoɴ(alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
@@ -2052,62 +2068,62 @@ rl(javascript:alert(""foo""))'>";
         {
             var sanitizer = Sanitizer;
             // IPA extensions
-            var html = @"<div style=""background-image:uʀʟ(javascript:alert())"">XSS</div>";
-            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""background-image:uʀʟ(javascript:alert())"">XSS</div>";
+            Assert.Equal(@"<div>XSS</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void RemovingTagEventTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.RemovingTag += (s, e) => e.Cancel = e.Tag.NodeName == "BLINK";
-            var html = @"<div><script></script><blink>Test</blink></div>";
-            Assert.Equal(@"<div><blink>Test</blink></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div><script></script><blink>Test</blink></div>";
+            Assert.Equal(@"<div><blink>Test</blink></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void RemovingAttributeEventTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.RemovingAttribute += (s, e) => e.Cancel = e.Attribute.Name == "onclick";
-            var html = @"<div alt=""alt"" onclick=""test"" onload=""test""></div>";
-            Assert.Equal(@"<div alt=""alt"" onclick=""test""></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div alt=""alt"" onclick=""test"" onload=""test""></div>";
+            Assert.Equal(@"<div alt=""alt"" onclick=""test""></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void RemovingAttributeEventTagTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.RemovingAttribute += (s, e) => Assert.IsAssignableFrom<IHtmlDivElement>(e.Tag);
-            var html = @"<div alt=""alt"" onclick=""test"" onload=""test""></div>";
-            sanitizer.Sanitize(html);
+            var Xml = @"<div alt=""alt"" onclick=""test"" onload=""test""></div>";
+            sanitizer.Sanitize(Xml);
         }
 
         [Fact]
         public void RemovingStyleEventTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.RemovingStyle += (s, e) => e.Cancel = e.Style.Name == "column-count";
-            var html = @"<div style=""top: 1px; column-count: 3;""></div>";
-            Assert.Equal(@"<div style=""top: 1px; column-count: 3""></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div style=""top: 1px; column-count: 3;""></div>";
+            Assert.Equal(@"<div style=""top: 1px; column-count: 3""></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void RemovingStyleEventTagTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.RemovingStyle += (s, e) => Assert.IsAssignableFrom<IHtmlDivElement>(e.Tag);
-            var html = @"<div style=""background: 0; test: xyz; bad: bad;""></div>";
-            sanitizer.Sanitize(html);
+            var Xml = @"<div style=""background: 0; test: xyz; bad: bad;""></div>";
+            sanitizer.Sanitize(Xml);
         }
 
         [Fact]
         public void ProtocolRelativeTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<a href=""//www.example.com/test"">Test</a>";
-            Assert.Equal(@"<a href=""//www.example.com/test"">Test</a>", sanitizer.Sanitize(html), ignoreCase: true);
-            Assert.Equal(@"<a href=""https://www.example.com/test"">Test</a>", sanitizer.Sanitize(html, baseUrl: @"https://www.xyz.com/123"), ignoreCase: true);
+            var Xml = @"<a href=""//www.example.com/test"">Test</a>";
+            Assert.Equal(@"<a href=""//www.example.com/test"">Test</a>", sanitizer.Sanitize(Xml), ignoreCase: true);
+            Assert.Equal(@"<a href=""https://www.example.com/test"">Test</a>", sanitizer.Sanitize(Xml, baseUrl: @"https://www.xyz.com/123"), ignoreCase: true);
         }
 
         [Fact]
@@ -2117,8 +2133,8 @@ rl(javascript:alert(""foo""))'>";
             var sanitizer = Sanitizer;
 
             // Act
-            string htmlFragment = "<BR SIZE=\"&{alert('XSS&gt;')}\">";
-            string actual = sanitizer.Sanitize(htmlFragment);
+            string XmlFragment = "<BR SIZE=\"&{alert('XSS&gt;')}\">";
+            string actual = sanitizer.Sanitize(XmlFragment);
 
             // Assert
             string expected = "<BR>";
@@ -2128,48 +2144,48 @@ rl(javascript:alert(""foo""))'>";
         [Fact]
         public void AllowDataAttributesTest()
         {
-            var sanitizer = new HtmlSanitizer()
+            var sanitizer = new XmlSanitizer()
             {
                 AllowDataAttributes = true
             };
-            var html = @"<div data-test1=""value x""></div>";
-            Assert.Equal(html, sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div data-test1=""value x""></div>";
+            Assert.Equal(Xml, sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void AllowDataAttributesCaseTest()
         {
-            var sanitizer = new HtmlSanitizer()
+            var sanitizer = new XmlSanitizer()
             {
                 AllowDataAttributes = true
             };
-            var html = @"<div DAta-test1=""value x""></div>";
-            Assert.Equal(html, sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div DAta-test1=""value x""></div>";
+            Assert.Equal(Xml, sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void AllowDataAttributesOffTest()
         {
-            var sanitizer = new HtmlSanitizer()
+            var sanitizer = new XmlSanitizer()
             {
                 AllowDataAttributes = false
             };
-            var html = @"<div data-test1=""value x""></div>";
-            Assert.Equal(@"<div></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div data-test1=""value x""></div>";
+            Assert.Equal(@"<div></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void SanitizeNonClosedTagTest()
         {
             var sanitizer = Sanitizer;
-            var html = @"<div>Hallo <p><b>Bold<br>Ballo";
-            Assert.Equal(@"<div>Hallo <p><b>Bold<br>Ballo</b></p></div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div>Hallo <p><b>Bold<br>Ballo";
+            Assert.Equal(@"<div>Hallo <p><b>Bold<br>Ballo</b></p></div>", sanitizer.Sanitize(Xml), ignoreCase: true);
         }
 
         [Fact]
         public void PostProcessNodeTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.PostProcessNode += (s, e) =>
             {
                 if (e.Node is IHtmlElement el)
@@ -2180,15 +2196,15 @@ rl(javascript:alert(""foo""))'>";
                     el.AppendChild(b);
                 }
             };
-            var html = @"<div>Hallo</div>";
-            var sanitized = sanitizer.Sanitize(html);
+            var Xml = @"<div>Hallo</div>";
+            var sanitized = sanitizer.Sanitize(Xml);
             Assert.Equal(@"<div class=""test"">Hallo<b>Test</b></div>", sanitized, ignoreCase: true);
         }
 
         [Fact]
         public void PostProcessNodeTestUsingDocument()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.PostProcessNode += (s, e) =>
             {
                 if (e.Node is IHtmlDivElement el)
@@ -2199,15 +2215,15 @@ rl(javascript:alert(""foo""))'>";
                     el.AppendChild(b);
                 }
             };
-            var html = @"<html><head></head><body><div>Hallo</div></body></html>";
-            var sanitized = sanitizer.SanitizeDocument(html);
-            Assert.Equal(@"<html><head></head><body><div class=""test"">Hallo<b>Test</b></div></body></html>", sanitized, ignoreCase: true);
+            var Xml = @"<Xml><head></head><body><div>Hallo</div></body></Xml>";
+            var sanitized = sanitizer.SanitizeDocument(Xml);
+            Assert.Equal(@"<Xml><head></head><body><div class=""test"">Hallo<b>Test</b></div></body></Xml>", sanitized, ignoreCase: true);
         }
 
         [Fact]
         public void PostProcessDomTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.PostProcessDom += (s, e) =>
             {
                 var p = e.Document.CreateElement("p");
@@ -2215,15 +2231,15 @@ rl(javascript:alert(""foo""))'>";
                 e.Document.Body.AppendChild(p);
             };
 
-            var html = @"<div>Hallo</div>";
-            var sanitized = sanitizer.Sanitize(html);
+            var Xml = @"<div>Hallo</div>";
+            var sanitized = sanitizer.Sanitize(Xml);
             Assert.Equal(@"<div>Hallo</div><p>World</p>", sanitized, ignoreCase: true);
         }
 
         [Fact]
         public void AutoLinkTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.PostProcessNode += (s, e) =>
             {
                 if (e.Node is IText text)
@@ -2231,14 +2247,14 @@ rl(javascript:alert(""foo""))'>";
                     var autolinked = Regex.Replace(text.NodeValue, @"https?://[^\s]+[^\s!?.:;,]+", m => $@"<a href=""{m.Value}"">{m.Value}</a>", RegexOptions.IgnoreCase);
                     if (autolinked != text.NodeValue)
                     {
-                        var f = new HtmlParser().ParseDocument(autolinked);
+                        var f = new XmlParser().ParseDocument(autolinked);
                         foreach (var node in f.Body.ChildNodes)
                             e.ReplacementNodes.Add(node);
                     }
                 }
             };
-            var html = @"<div>Click here: http://example.com/.</div>";
-            Assert.Equal(@"<div>Click here: <a href=""http://example.com/"">http://example.com/</a>.</div>", sanitizer.Sanitize(html), ignoreCase: true);
+            var Xml = @"<div>Click here: http://example.com/.</div>";
+            Assert.Equal(@"<div>Click here: <a href=""http://example.com/"">http://example.com/</a>.</div>", sanitizer.Sanitize(Xml), ignoreCase: true);
             Assert.Equal(@"Check out <a href=""https://www.google.com"">https://www.google.com</a>.", sanitizer.Sanitize("Check out https://www.google.com."), ignoreCase: true);
         }
 
@@ -2249,11 +2265,11 @@ rl(javascript:alert(""foo""))'>";
             var s = Sanitizer;
 
             // Act
-            var htmlFragment = "Тест";
-            var actual = s.Sanitize(htmlFragment, "");
+            var XmlFragment = "Тест";
+            var actual = s.Sanitize(XmlFragment, "");
 
             // Assert
-            var expected = htmlFragment;
+            var expected = XmlFragment;
             Assert.Equal(expected, actual, ignoreCase: true);
         }
 
@@ -2261,11 +2277,11 @@ rl(javascript:alert(""foo""))'>";
         public void DisallowCssPropertyValueTest()
         {
             // Arrange
-            var s = new HtmlSanitizer { DisallowCssPropertyValue = new Regex(@"^rgba\(0.*") };
+            var s = new XmlSanitizer { DisallowCssPropertyValue = new Regex(@"^rgba\(0.*") };
 
             // Act
-            var htmlFragment = @"<div style=""color: rgba(0, 0, 0, 1); background-color: rgba(255, 255, 255, 1)"">Test</div>";
-            var actual = s.Sanitize(htmlFragment);
+            var XmlFragment = @"<div style=""color: rgba(0, 0, 0, 1); background-color: rgba(255, 255, 255, 1)"">Test</div>";
+            var actual = s.Sanitize(XmlFragment);
 
             // Assert
             var expected = @"<div style=""background-color: rgba(255, 255, 255, 1)"">Test</div>";
@@ -2279,8 +2295,8 @@ rl(javascript:alert(""foo""))'>";
             var s = Sanitizer;
 
             // Act
-            var htmlFragment = @"<div style=""\000062ackground-image: URL(http://www.example.com/bg.jpg)"">Test</div>";
-            var actual = s.Sanitize(htmlFragment);
+            var XmlFragment = @"<div style=""\000062ackground-image: URL(http://www.example.com/bg.jpg)"">Test</div>";
+            var actual = s.Sanitize(XmlFragment);
 
             // Assert
             var expected = @"<div style=""background-image: url(&quot;http://www.example.com/bg.jpg&quot;)"">Test</div>";
@@ -2294,8 +2310,8 @@ rl(javascript:alert(""foo""))'>";
             var s = Sanitizer;
 
             // Act
-            var htmlFragment = @"<div style=""color: rgba(0, 0, 0, 1); background-image: URL(x/y/bg.jpg)"">Test</div>";
-            var actual = s.Sanitize(htmlFragment, "hallo");
+            var XmlFragment = @"<div style=""color: rgba(0, 0, 0, 1); background-image: URL(x/y/bg.jpg)"">Test</div>";
+            var actual = s.Sanitize(XmlFragment, "hallo");
 
             // Assert
             var expected = @"<div style=""color: rgba(0, 0, 0, 1)"">Test</div>";
@@ -2303,14 +2319,14 @@ rl(javascript:alert(""foo""))'>";
         }
 
         [Fact]
-        public void XhtmlTest()
+        public void XXmlTest()
         {
             // Arrange
             var s = Sanitizer;
 
             // Act
-            var htmlFragment = @"<div><img src=""xyz""><br></div>";
-            var actual = s.Sanitize(htmlFragment, "", AngleSharp.Xml.XmlMarkupFormatter.Instance);
+            var XmlFragment = @"<div><img src=""xyz""><br></div>";
+            var actual = s.Sanitize(XmlFragment, "", AngleSharp.Xml.XmlMarkupFormatter.Instance);
 
             // Assert
             var expected = @"<div><img src=""xyz"" /><br /></div>";
@@ -2320,32 +2336,32 @@ rl(javascript:alert(""foo""))'>";
         [Fact]
         public void MultipleRecipientsTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/41
+            // https://github.com/mganss/XmlSanitizer/issues/41
 
             // Arrange
-            var s = new HtmlSanitizer();
+            var s = new XmlSanitizer();
             s.AllowedSchemes.Add("mailto");
 
             // Act
-            var htmlFragment = @"<a href=""mailto:bonnie@example.com,clyde@example.com"">Bang Bang</a>";
-            var actual = s.Sanitize(htmlFragment);
+            var XmlFragment = @"<a href=""mailto:bonnie@example.com,clyde@example.com"">Bang Bang</a>";
+            var actual = s.Sanitize(XmlFragment);
 
             // Assert
-            var expected = htmlFragment;
+            var expected = XmlFragment;
             Assert.Equal(expected, actual, ignoreCase: true);
         }
 
         [Fact]
         public void QuotedBackgroundImageTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/44
+            // https://github.com/mganss/XmlSanitizer/issues/44
 
             // Arrange
             var s = Sanitizer;
 
             // Act
-            var htmlFragment = "<div style=\"background-image: url('some/random/url.img')\"></div>";
-            var actual = s.Sanitize(htmlFragment);
+            var XmlFragment = "<div style=\"background-image: url('some/random/url.img')\"></div>";
+            var actual = s.Sanitize(XmlFragment);
 
             // Assert
             var expected = "<div style=\"background-image: url(&quot;some/random/url.img&quot;)\"></div>";
@@ -2359,8 +2375,8 @@ rl(javascript:alert(""foo""))'>";
             var s = Sanitizer;
 
             // Act
-            var htmlFragment = "<span style='background-image: url(\"/api/users/defaultAvatar\");'></span>";
-            var actual = s.Sanitize(htmlFragment);
+            var XmlFragment = "<span style='background-image: url(\"/api/users/defaultAvatar\");'></span>";
+            var actual = s.Sanitize(XmlFragment);
 
             // Assert
             var expected = "<span style=\"background-image: url(&quot;/api/users/defaultAvatar&quot;)\"></span>";
@@ -2370,10 +2386,10 @@ rl(javascript:alert(""foo""))'>";
         [Fact]
         public void RemoveEventForNotAllowedTag()
         {
-            var allowedTags = new[] {"a"};
+            var allowedTags = new[] { "a" };
             RemoveReason? actual = null;
 
-            var s = new HtmlSanitizer(allowedTags);
+            var s = new XmlSanitizer(allowedTags);
             s.RemovingTag += (sender, args) =>
             {
                 actual = args.Reason;
@@ -2388,10 +2404,10 @@ rl(javascript:alert(""foo""))'>";
         public void RemoveEventForNotAllowedAttribute()
         {
             var allowedTags = new[] { "a" };
-            var allowedAttributes = new[] {"id"};
+            var allowedAttributes = new[] { "id" };
             RemoveReason? actual = null;
 
-            var s = new HtmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes);
+            var s = new XmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes);
             s.RemovingAttribute += (sender, args) =>
             {
                 actual = args.Reason;
@@ -2410,7 +2426,7 @@ rl(javascript:alert(""foo""))'>";
             var allowedStyles = new[] { "margin" };
             RemoveReason? actual = null;
 
-            var s = new HtmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes, allowedCssProperties: allowedStyles);
+            var s = new XmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes, allowedCssProperties: allowedStyles);
             s.RemovingStyle += (sender, args) =>
             {
                 actual = args.Reason;
@@ -2428,7 +2444,7 @@ rl(javascript:alert(""foo""))'>";
             var allowedAttributes = new[] { "id" };
             RemoveReason? actual = null;
 
-            var s = new HtmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes);
+            var s = new XmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes);
             s.RemovingAttribute += (sender, args) =>
             {
                 actual = args.Reason;
@@ -2447,7 +2463,7 @@ rl(javascript:alert(""foo""))'>";
             var allowedStyles = new[] { "margin-top" };
             RemoveReason? actual = null;
 
-            var s = new HtmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes, allowedCssProperties: allowedStyles)
+            var s = new XmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes, allowedCssProperties: allowedStyles)
             {
                 DisallowCssPropertyValue = new Regex(@"\d+.*")
             };
@@ -2469,7 +2485,7 @@ rl(javascript:alert(""foo""))'>";
             var uriAttributes = new[] { "href" };
             RemoveReason? actual = null;
 
-            var s = new HtmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes, uriAttributes: uriAttributes);
+            var s = new XmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes, uriAttributes: uriAttributes);
             s.RemovingAttribute += (sender, args) =>
             {
                 actual = args.Reason;
@@ -2488,7 +2504,7 @@ rl(javascript:alert(""foo""))'>";
             var allowedStyles = new[] { "background-image" };
             RemoveReason? actual = null;
 
-            var s = new HtmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes, allowedCssProperties: allowedStyles);
+            var s = new XmlSanitizer(allowedTags: allowedTags, allowedAttributes: allowedAttributes, allowedCssProperties: allowedStyles);
             s.RemovingStyle += (sender, args) =>
             {
                 actual = args.Reason;
@@ -2503,7 +2519,7 @@ rl(javascript:alert(""foo""))'>";
         public void RemoveEventForNotAllowedTag_ScriptTag()
         {
             RemoveReason? actual = null;
-            var s = new HtmlSanitizer();
+            var s = new XmlSanitizer();
             s.RemovingTag += (sender, args) =>
             {
                 actual = args.Reason;
@@ -2516,7 +2532,7 @@ rl(javascript:alert(""foo""))'>";
         public void RemoveEventForNotAllowedTag_StyleTag()
         {
             RemoveReason? actual = null;
-            var s = new HtmlSanitizer();
+            var s = new XmlSanitizer();
             s.RemovingTag += (sender, args) =>
             {
                 actual = args.Reason;
@@ -2529,7 +2545,7 @@ rl(javascript:alert(""foo""))'>";
         public void RemoveEventForNotAllowedTag_ScriptTagAndSpan()
         {
             RemoveReason? actual = null;
-            var s = new HtmlSanitizer();
+            var s = new XmlSanitizer();
             s.RemovingTag += (sender, args) =>
             {
                 actual = args.Reason;
@@ -2544,7 +2560,7 @@ rl(javascript:alert(""foo""))'>";
             RemoveReason? reason = null;
             string removedClass = null;
 
-            var s = new HtmlSanitizer(allowedAttributes: new[] { "class" }) { AllowedClasses = { "good" } };
+            var s = new XmlSanitizer(allowedAttributes: new[] { "class" }) { AllowedClasses = { "good" } };
             s.RemovingCssClass += (sender, args) =>
             {
                 reason = args.Reason;
@@ -2563,7 +2579,7 @@ rl(javascript:alert(""foo""))'>";
             RemoveReason? reason = null;
             string attributeName = null;
 
-            var s = new HtmlSanitizer(allowedAttributes: new[] { "class" }) { AllowedClasses = { "other" } };
+            var s = new XmlSanitizer(allowedAttributes: new[] { "class" }) { AllowedClasses = { "other" } };
             s.RemovingAttribute += (sender, args) =>
             {
                 attributeName = args.Attribute.Name;
@@ -2579,33 +2595,33 @@ rl(javascript:alert(""foo""))'>";
         [Fact]
         public void DocumentTest()
         {
-            var s = new HtmlSanitizer();
+            var s = new XmlSanitizer();
             s.AllowedTags.Add("title");
-            var html = "<html><head><title>Test</title></head><body><div>Test</div></body></html>";
+            var Xml = "<Xml><head><title>Test</title></head><body><div>Test</div></body></Xml>";
 
-            var actual = s.SanitizeDocument(html);
+            var actual = s.SanitizeDocument(Xml);
 
-            Assert.Equal(html, actual);
+            Assert.Equal(Xml, actual);
         }
 
         [Fact]
         public void DocumentFromFragmentTest()
         {
             var s = Sanitizer;
-            var html = "<div>Test</div>";
+            var Xml = "<div>Test</div>";
 
-            var actual = s.SanitizeDocument(html);
+            var actual = s.SanitizeDocument(Xml);
 
-            Assert.Equal("<html><head></head><body><div>Test</div></body></html>", actual);
+            Assert.Equal("<Xml><head></head><body><div>Test</div></body></Xml>", actual);
         }
 
         [Fact]
         public void FragmentFromDocumentTest()
         {
             var s = Sanitizer;
-            var html = "<html><head><title>Test</title></head><body><div>Test</div></body></html>";
+            var Xml = "<Xml><head><title>Test</title></head><body><div>Test</div></body></Xml>";
 
-            var actual = s.Sanitize(html);
+            var actual = s.Sanitize(Xml);
 
             Assert.Equal("<div>Test</div>", actual);
         }
@@ -2613,28 +2629,28 @@ rl(javascript:alert(""foo""))'>";
         [Fact]
         public void StyleTagTest()
         {
-            var s = new HtmlSanitizer();
+            var s = new XmlSanitizer();
             s.AllowedTags.Add("style");
-            var html = "<html><head><style>body { background-color: rgba(255, 255, 255, 1); hallo-ballo: xyz }</style></head><body><div>Test</div></body></html>";
+            var Xml = "<Xml><head><style>body { background-color: rgba(255, 255, 255, 1); hallo-ballo: xyz }</style></head><body><div>Test</div></body></Xml>";
 
-            var actual = s.SanitizeDocument(html);
+            var actual = s.SanitizeDocument(Xml);
 
-            Assert.Equal("<html><head><style>body { background-color: rgba(255, 255, 255, 1) }</style></head><body><div>Test</div></body></html>", actual);
+            Assert.Equal("<Xml><head><style>body { background-color: rgba(255, 255, 255, 1) }</style></head><body><div>Test</div></body></Xml>", actual);
         }
 
         [Fact]
         public void StyleAtTest()
         {
-            var s = new HtmlSanitizer();
+            var s = new XmlSanitizer();
             s.AllowedTags.Add("style");
             s.AllowedAtRules.Add(AngleSharp.Css.Dom.CssRuleType.Media);
             s.AllowedAtRules.Add(AngleSharp.Css.Dom.CssRuleType.Keyframes);
             s.AllowedAtRules.Add(AngleSharp.Css.Dom.CssRuleType.Keyframe);
             s.AllowedAtRules.Add(AngleSharp.Css.Dom.CssRuleType.Page);
-            var html = @"<html><head><style>
+            var Xml = @"<Xml><head><style>
 @charset ""UTF-8"";
 @import url(evil.css);
-@namespace url(http://www.w3.org/1999/xhtml);
+@namespace url(http://www.w3.org/1999/xXml);
 @namespace svg url(http://www.w3.org/2000/svg);
 @media (min-width: 100px) {
     div { color: rgba(0, 0, 0, 1); }
@@ -2684,29 +2700,29 @@ rl(javascript:alert(""foo""))'>";
     nice-style: 12;
   }
 }
-</style></head></html>";
+</style></head></Xml>";
 
-            var actual = s.SanitizeDocument(html);
+            var actual = s.SanitizeDocument(Xml);
 
-            Assert.Equal(@"<html><head><style>@namespace url(""http://www.w3.org/1999/xhtml"");
+            Assert.Equal(@"<Xml><head><style>@namespace url(""http://www.w3.org/1999/xXml"");
 @namespace svg url(""http://www.w3.org/2000/svg"");
 @media (min-width: 100px) { div { color: rgba(0, 0, 0, 1) } }
 @page { margin-top: 2cm }
-@keyframes identifier { 0% { top: 0 } 50% { top: 30px; left: 20px } 50% { top: 10px } 100% { top: 0 } }</style></head><body></body></html>".Replace("\r\n", "\n"),
+@keyframes identifier { 0% { top: 0 } 50% { top: 30px; left: 20px } 50% { top: 10px } 100% { top: 0 } }</style></head><body></body></Xml>".Replace("\r\n", "\n"),
                 actual);
         }
 
         [Fact]
         public void DataTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/66
+            // https://github.com/mganss/XmlSanitizer/issues/66
 
-            var sanitizer = new HtmlSanitizer()
+            var sanitizer = new XmlSanitizer()
             {
                 AllowDataAttributes = true
             };
             sanitizer.AllowedSchemes.Add("data");
-            var html = @"    <p>
+            var Xml = @"    <p>
         <img src=""data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAFvAeoDASIAAhEBAxEB/8QAHgAAAAcBAQEBAAAAAAAAAAAAAgMEBQYHCAEJAAr/xABrEAABAwMCAwQGBQQHEA0JBwUBAgMEAAURBiEHEjEIE0FRCRQiYXGBFTJCkaEjM7HBFhdSYnXR0iQ1NzhDY3J2gpKis7TU4fAYGSU0VnSEhZSVsrXCJicoNkZTZnOjREVUV4Ok8VVkZZOW/8QAHAEAAQUBAQEAAAAAAAAAAAAABAECAwUGAAcI/8QAOhEAAQQBBAADBQYFAwQDAAAAAQACAxEEBRIhMRNBUQYUImFxIzIzNIGRFSRCocEHUrE10eHwFkPx/9oADAMBAAIRAxEAPwCsOwKgjhLKXyKx9NPjPcjH5tv7f6v4q2HaSAEn34rIfYBCVcIZWA3kXqQT7auf8214dMfj0rXMJB5UFJ99eg6T/wBPZ+q8+1gVqDz9FMLYsnpUpgrWEDIO25qJWhwEdOlSmG7gAJzvQWX2psY8J7hvpKMg7e+liHfZ26im+OAU9cY8KVt486qZGgqxj6S5K87k184okkjxopC84GK6tWUKHT30KGU5EB3HCbLmvmSoKwAn3+NQe4pBeJT0zUynILqVJK8eJNRWe2hJwjfNW2JwhJk1Hf5UFQPKTR6kZxQe5Uds1at55QDuklaAWr6uaOdjnuiQnrSlEUpGMDJo9TQDeD51KH0oCwO7UXlW3vle0jPz60mFlTn2B8RUuLDRweXpQkMtg55QanGU7pRe7hRL6ASGQQklWab5FsUhRSp
 GPdVgqjtqRsgZpqlwCp0+x76fHlG6UUmOFBnLesn2EA/hXGoJV7ABBqVu245zjFEsW495z46GjDk2OUMIACmdq1rxg5pY1aiBkJ6U+tQCrojGKVpgqSgkY+6oJMn0RDIVHTb1EpTyn30e3aQrbGx60+ohEkZSN+lKExAjcozQrsk1ypWwElMKLTyJwlIxQFWjAyk1KPVhtgeRoKmFKVjO3wqMZJHZUnu3Khzlo5lAp6+NfGAW/Z5aljkTKTlIOfdSd63gJB5MipG5N9qJ+MowWCFfV2Brj0VD4x4in1cADdKRiuCEBk43NTeOB0ovCIUInQlMuEBGw3BqO6pYdcsNwZZRzOORnUpT5nkNWPcrUtwEoT1FML9nUULDyOZJ2Ix1H+pqcTCRh5UBh2usLzivVxXbtUxZHdnCSAfhzUk1c16+5qJhQwGXUSGx12A3/TT1x1sMqwXuelbJbLLriBtjGVHH4VEWb8LjGRdI6FLXKgFqSOoC0o8f70GsjI+nvictfC22MlaqiuMp0LLYWQATsSabHUqBClZ3APTwpfdstyTkjJOaNvziluMENpQBGaGAnGfZ61nnM7+S0YcTSTQIrrsZ98H2UYBGaTblB8gacbW6lFteKzgF8A/DkNN7y0KWooPs+WKiP3aU9p10qVm9xuTwV+GD/HUl4nKC58cnPP6q0D8BTZw3jokX5II2SkHf3kU98WW0JurXLsAwkdPfQ3/3D6Ikj7EK1OzLL9XbQ0AcOuLVjzIFSnjlfJD+s7aEJWn1ZttpJAx9vP6DUL7Pb6WWY7iwctlYH39fxq4uLF30jdtN2hcmM23eRKSjKAMqR0GT8cVXSuDch1qUN+BpU10FfbXHtwl3GY1FRGAbW46sJTuc+NX7pXiXoPUBRb7Jq22TZCQEltmQlSs48qqfsW8GNFcb+M2oEcQ4Ld1sWjrZGms2V4FTE2Q8tYStxOcOIQGlewQUkrTnpg2/bNDcBu0dwg4kX7RfZ2j8GL9w+us2JbrtHs7FtddfiIKkuqLK
 Ed40r6rjSsgZ2VzAKF9omV/DwX1e5U+sYvv5DQapS1lZC/wpwQ4QnIwKg3C+9y9R6BsF9nZEiZBZdcBG+SkZqW9/vyjpXoYO9tjzWFcNpLSnEPqCM824oJk832vxpCXzylNJ1yik48BULkRG2wnQSuU5Kxt76UR5ufOo+h/ncwCMe80tZeCUgZptKSqUiZk7fW++hl8Z5gSDTQ290xR6ZBV4U0RhMJpFX3WOndLx/W9RXyHbmP3ch0IH40i05xK0Pq9Zb0xqu23JY+zHkJWfuqJcIuHWieKereKfE/itpZOs4mhHzbbVpt+MJLSuSMH3HO4USh5a+dKEBSSAUkjc7MF+07wl4l9laN2qOFnBdngzqCwPrlNQYtvagiW03I7txl1DSG0vJcSMoWUhQVjG3MFUsmrNjnMe3gGlas0nxIfE3ckWrv8AWPjXUvAnHnTVaZi5trhynQQt9lC1e4lOaVFfKM486vKB6VMQnJLgA+NGNuYVnwpA275+FG9+PAU4R2ouk5oeHnRyVeIP3U2IdB6/KlCXt8bEDzphirtcCFi70raubhLpfGSBdnT0zj8m34+FeWOfea9RPSpuhfCjS+SCfpZ0DJOcd230/wBNeXn31jtT/NPC1ukflgvRr0fEdbvBWX+d5Pp2R4jkz3bXh1zWtIzRaCRjpWXPR0MBzgjLXyoyL5KH5o835tr7XTHurWTcU9eta3R3/wAkwfVZXWWn315+iXW50pAOMVJre5slXN8qijCS0pKc0/wX07YPQU/KjDhwo8d1KSJcKcKHiM0sadynY0yR3grcknypY1JAIANVD4lZMeo3xX4sR+GVnjOMWuTdrzdHhDtdtjI53pchWyUJSNzuaj0XgH2yuJUAXjUnGyxcL1SMLatNtsxuzzKCkHlecLzSA4DkEIK07bKNAsAjam7cGkbNcGUvM6e0jcr5GCuiJJcZYCx7wh5Y+da6v1yNmsdwvCWe+MGK7IDecc5Qgqxn34qjyZXB5aOFf4WOwxh7hZKyIrsmdrXTs
@@ -2776,29 +2792,29 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
     </p>
 ".Replace("\r\n", "\n");
 
-            var actual = sanitizer.Sanitize(html);
+            var actual = sanitizer.Sanitize(Xml);
 
-            Assert.Equal(html, actual);
+            Assert.Equal(Xml, actual);
         }
 
         [Fact]
         public void UriHashTest()
         {
             var s = Sanitizer;
-            var html = @"<a href=""http://domain.com/index.html?test=#value#"">test</a>";
+            var Xml = @"<a href=""http://domain.com/index.Xml?test=#value#"">test</a>";
 
-            var actual = s.Sanitize(html);
+            var actual = s.Sanitize(Xml);
 
-            Assert.Equal(html, actual);
+            Assert.Equal(Xml, actual);
         }
 
         [Fact]
         public void FragmentTest()
         {
             var s = Sanitizer;
-            var html = @"<script>alert('test');</script><p>Test</p>";
+            var Xml = @"<script>alert('test');</script><p>Test</p>";
 
-            var actual = s.Sanitize(html);
+            var actual = s.Sanitize(Xml);
 
             Assert.Equal("<p>Test</p>", actual);
         }
@@ -2806,12 +2822,12 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void OpenTagFragmentTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/75
+            // https://github.com/mganss/XmlSanitizer/issues/75
 
             var s = Sanitizer;
-            var html = "<p>abc<script>xyz</p>";
+            var Xml = "<p>abc<script>xyz</p>";
 
-            var actual = s.Sanitize(html);
+            var actual = s.Sanitize(Xml);
 
             Assert.Equal("<p>abc</p>", actual);
         }
@@ -2819,12 +2835,12 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void NullStyleTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/81
+            // https://github.com/mganss/XmlSanitizer/issues/81
 
-            var s = new HtmlSanitizer { HtmlParserFactory = () => new HtmlParser(new HtmlParserOptions(), BrowsingContext.New(new Configuration())) };
-            var html = @"<p style=""t"">xyz</p>";
+            var s = new XmlSanitizer { XmlParserFactory = () => new XmlParser(new XmlParserOptions(), BrowsingContext.New(new Configuration())) };
+            var Xml = @"<p style=""t"">xyz</p>";
 
-            var actual = s.Sanitize(html);
+            var actual = s.Sanitize(Xml);
 
             Assert.Equal("<p>xyz</p>", actual);
         }
@@ -2832,12 +2848,12 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void EscapeEntityInAttributeValueTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/84
+            // https://github.com/mganss/XmlSanitizer/issues/84
 
-            var s = new HtmlSanitizer { HtmlParserFactory = () => new HtmlParser(new HtmlParserOptions(), BrowsingContext.New(new Configuration())) };
-            var html = @"<input type=""text"" name=""my_name"" value=""<insert name>"">";
+            var s = new XmlSanitizer { XmlParserFactory = () => new XmlParser(new XmlParserOptions(), BrowsingContext.New(new Configuration())) };
+            var Xml = @"<input type=""text"" name=""my_name"" value=""<insert name>"">";
 
-            var actual = s.Sanitize(html);
+            var actual = s.Sanitize(Xml);
 
             Assert.Equal(@"<input type=""text"" name=""my_name"" value=""&lt;insert name&gt;"">", actual);
         }
@@ -2845,9 +2861,9 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void FontFaceTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/80
+            // https://github.com/mganss/XmlSanitizer/issues/80
 
-            var s = new HtmlSanitizer()
+            var s = new XmlSanitizer()
             {
                 AllowDataAttributes = true
             };
@@ -2858,10 +2874,10 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
             s.AllowedCssProperties.Add("src");
             s.AllowedCssProperties.Add("font-family");
 
-            var html = @"<html><head><style>@font-face { font-family: FrutigerLTStd; src: url(""https://example.com/FrutigerLTStd-Light.otf"") format(""opentype"") }</style></head><body></body></html>";
-            var actual = s.SanitizeDocument(html);
+            var Xml = @"<Xml><head><style>@font-face { font-family: FrutigerLTStd; src: url(""https://example.com/FrutigerLTStd-Light.otf"") format(""opentype"") }</style></head><body></body></Xml>";
+            var actual = s.SanitizeDocument(Xml);
 
-            Assert.Equal(html, actual);
+            Assert.Equal(Xml, actual);
         }
 
         public static IEnumerable<T> Shuffle<T>(IEnumerable<T> source, Random rng)
@@ -2890,10 +2906,10 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
                 var allGo = new ManualResetEvent(false);
                 Exception firstException = null;
                 var failures = 0;
-                var fixture = new HtmlSanitizerFixture();
-                var tests = new HtmlSanitizerTests(fixture);
+                var fixture = new XmlSanitizerFixture();
+                var tests = new XmlSanitizerTests(fixture);
                 var waiting = numThreads;
-                var methods = typeof(HtmlSanitizerTests).GetTypeInfo().GetMethods()
+                var methods = typeof(XmlSanitizerTests).GetTypeInfo().GetMethods()
                     .Where(m => m.GetCustomAttributes(typeof(Xunit.FactAttribute), false).Cast<Xunit.FactAttribute>().Any(f => f.Skip == null))
                     .Where(m => m.Name != "ThreadTest");
                 var threads = Shuffle(methods, random)
@@ -2925,10 +2941,10 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void AllowAllClassesByDefaultTest()
         {
-            var sanitizer = new HtmlSanitizer(allowedAttributes: new[] { "class" });
+            var sanitizer = new XmlSanitizer(allowedAttributes: new[] { "class" });
 
-            var html = @"<div class=""good bad"">Test</div>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"<div class=""good bad"">Test</div>";
+            var actual = sanitizer.Sanitize(Xml);
 
             Assert.Equal(@"<div class=""good bad"">Test</div>", actual);
         }
@@ -2936,10 +2952,10 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void AllowClassesTest()
         {
-            var sanitizer = new HtmlSanitizer(allowedAttributes: new[] { "class" }) { AllowedClasses = { "good" } };
+            var sanitizer = new XmlSanitizer(allowedAttributes: new[] { "class" }) { AllowedClasses = { "good" } };
 
-            var html = @"<div class=""good bad"">Test</div>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"<div class=""good bad"">Test</div>";
+            var actual = sanitizer.Sanitize(Xml);
 
             Assert.Equal(@"<div class=""good"">Test</div>", actual);
         }
@@ -2947,7 +2963,7 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void AllowClassesUsingEventTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.RemovingAttribute += (s, e) =>
             {
                 if (e.Attribute.Name == "class")
@@ -2957,8 +2973,8 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
                 }
             };
 
-            var html = @"<div class=""good bad"">Test</div>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"<div class=""good bad"">Test</div>";
+            var actual = sanitizer.Sanitize(Xml);
 
             Assert.Equal(@"<div class=""good"">Test</div>", actual);
         }
@@ -2966,10 +2982,10 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void RemoveClassAttributeIfEmptyTest()
         {
-            var sanitizer = new HtmlSanitizer(allowedAttributes: new[] { "class" }) { AllowedClasses = { "other" } };
+            var sanitizer = new XmlSanitizer(allowedAttributes: new[] { "class" }) { AllowedClasses = { "other" } };
 
-            var html = @"<div class=""good bad"">Test</div>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"<div class=""good bad"">Test</div>";
+            var actual = sanitizer.Sanitize(Xml);
 
             Assert.Equal(@"<div>Test</div>", actual);
         }
@@ -2977,7 +2993,7 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void TextTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.AllowedTags.Remove("div");
             sanitizer.RemovingTag += (s, e) =>
             {
@@ -2988,8 +3004,8 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
                 }
             };
 
-            var html = @"Test1 <div>Test2 <script>Test3</script> <b>Test4</b></div>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"Test1 <div>Test2 <script>Test3</script> <b>Test4</b></div>";
+            var actual = sanitizer.Sanitize(Xml);
 
             Assert.Equal("Test1 Test2 Test3 <b>Test4</b>", actual);
         }
@@ -2997,11 +3013,11 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void KeepChildNodesTest()
         {
-            var sanitizer = new HtmlSanitizer { KeepChildNodes = true };
+            var sanitizer = new XmlSanitizer { KeepChildNodes = true };
             sanitizer.AllowedTags.Remove("div");
 
-            var html = @"Test1 <div>Test2 <script>Test3</script> <b>Test4</b></div>";
-            var actual = sanitizer.Sanitize(html);
+            var Xml = @"Test1 <div>Test2 <script>Test3</script> <b>Test4</b></div>";
+            var actual = sanitizer.Sanitize(Xml);
 
             Assert.Equal("Test1 Test2 Test3 <b>Test4</b>", actual);
         }
@@ -3009,7 +3025,7 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void NormalizeTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.PostProcessNode += (s, e) =>
             {
                 Assert.Single(e.Document.Body.ChildNodes);
@@ -3018,9 +3034,9 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
                 Assert.Equal("Test1Test2", text.NodeValue);
             };
 
-            var html = @"Test1<script>test();</script>Test2<!-- comment -->";
+            var Xml = @"Test1<script>test();</script>Test2<!-- comment -->";
 
-            var actual = sanitizer.Sanitize(html);
+            var actual = sanitizer.Sanitize(Xml);
 
             Assert.Equal("Test1Test2", actual);
         }
@@ -3028,12 +3044,12 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void RemovingCommentTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.RemovingComment += (s, e) => e.Cancel = e.Comment.TextContent.Contains("good comment");
 
-            var html = @"<!-- bad comment --><!-- good comment -->";
+            var Xml = @"<!-- bad comment --><!-- good comment -->";
 
-            var actual = sanitizer.Sanitize(html);
+            var actual = sanitizer.Sanitize(Xml);
 
             Assert.Equal("<!-- good comment -->", actual);
         }
@@ -3041,40 +3057,40 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void TrailingSlashTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.AllowedSchemes.Add("resources");
 
-            var html = "<IMG src=\"resources://ais_w20_h20_33ba129c.png\">";
+            var Xml = "<IMG src=\"resources://ais_w20_h20_33ba129c.png\">";
 
-            var actual = sanitizer.Sanitize(html);
+            var actual = sanitizer.Sanitize(Xml);
 
-            Assert.Equal(html, actual, ignoreCase: true);
+            Assert.Equal(Xml, actual, ignoreCase: true);
         }
 
         [Fact]
         public void FileUrlTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.AllowedSchemes.Add("file");
 
-            var html = @"<a href=""file:///C:/exampleㄓ.txt"">test</a>";
+            var Xml = @"<a href=""file:///C:/exampleㄓ.txt"">test</a>";
 
-            var actual = sanitizer.Sanitize(html);
+            var actual = sanitizer.Sanitize(Xml);
 
-            Assert.Equal(html, actual);
+            Assert.Equal(Xml, actual);
         }
 
         [Fact]
         public void SvgTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/119
+            // https://github.com/mganss/XmlSanitizer/issues/119
 
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.AllowedTags.Add("svg");
 
-            var html = @"<svg onchange='alert(1)'>123</svg>";
+            var Xml = @"<svg onchange='alert(1)'>123</svg>";
 
-            var actual = sanitizer.Sanitize(html);
+            var actual = sanitizer.Sanitize(Xml);
 
             Assert.Equal("<svg>123</svg>", actual);
         }
@@ -3082,29 +3098,29 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void SquareBracketTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/137
+            // https://github.com/mganss/XmlSanitizer/issues/137
 
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.AllowedAttributes.Add("[minutes]");
 
-            var html = @"<div [minutes]=""2"">123</div>";
+            var Xml = @"<div [minutes]=""2"">123</div>";
 
-            var actual = sanitizer.Sanitize(html);
+            var actual = sanitizer.Sanitize(Xml);
 
-            Assert.Equal(html, actual);
+            Assert.Equal(Xml, actual);
         }
 
         [Fact]
         public void FilterUrlTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/156
+            // https://github.com/mganss/XmlSanitizer/issues/156
 
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.FilterUrl += (s, e) => e.SanitizedUrl = "https://www.example.com/test.png";
 
-            var html = @"<img src=""http://www.example.com/"">";
+            var Xml = @"<img src=""http://www.example.com/"">";
 
-            var actual = sanitizer.Sanitize(html);
+            var actual = sanitizer.Sanitize(Xml);
 
             Assert.Equal(@"<img src=""https://www.example.com/test.png"">", actual);
         }
@@ -3113,95 +3129,95 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void EncodingTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/158
+            // https://github.com/mganss/XmlSanitizer/issues/158
 
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             sanitizer.AllowedTags.Add("meta");
             sanitizer.AllowedAttributes.Add("http-equiv");
             sanitizer.AllowedAttributes.Add("content");
 
-            var html = @"<html><head><meta http-equiv=""Content-Type"" content=""text/html; charset=iso-8859-1""></head><body>kopieën</body></html>";
+            var Xml = @"<Xml><head><meta http-equiv=""Content-Type"" content=""text/Xml; charset=iso-8859-1""></head><body>kopieën</body></Xml>";
 
-            using var stream = new MemoryStream(Encoding.GetEncoding("iso-8859-1").GetBytes(html));
+            using var stream = new MemoryStream(Encoding.GetEncoding("iso-8859-1").GetBytes(Xml));
             var actual = sanitizer.SanitizeDocument(stream);
 
-            Assert.Equal(html, actual);
+            Assert.Equal(Xml, actual);
         }
 
         [Fact]
         public void RemovingFramesetShouldTriggerEventTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/163
+            // https://github.com/mganss/XmlSanitizer/issues/163
 
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
             bool anyNodeRemoved = false;
             sanitizer.RemovingTag += (s, e) => anyNodeRemoved = true;
-            var html = @"<html><frameset><frame src=""javascript:alert(1)""></frame></frameset></html>";
-            var actual = sanitizer.SanitizeDocument(html);
+            var Xml = @"<Xml><frameset><frame src=""javascript:alert(1)""></frame></frameset></Xml>";
+            var actual = sanitizer.SanitizeDocument(Xml);
             Assert.True(anyNodeRemoved);
-            Assert.Equal("<html><head></head></html>", actual);
+            Assert.Equal("<Xml><head></head></Xml>", actual);
         }
 
         [Fact]
-        public void HtmlDocumentTest()
+        public void XmlDocumentTest()
         {
-            // https://github.com/mganss/HtmlSanitizer/issues/164
+            // https://github.com/mganss/XmlSanitizer/issues/164
 
-            var sanitizer = new HtmlSanitizer();
-            var html = @"<html onmousemove=""alert(document.location)""><head></head><body></body></html>";
+            var sanitizer = new XmlSanitizer();
+            var Xml = @"<Xml onmousemove=""alert(document.location)""><head></head><body></body></Xml>";
 
-            var actual = sanitizer.SanitizeDocument(html);
+            var actual = sanitizer.SanitizeDocument(Xml);
 
-            Assert.Equal("<html><head></head><body></body></html>", actual);
+            Assert.Equal("<Xml><head></head><body></body></Xml>", actual);
         }
 
         [Fact]
         public void PreParsedDocumentWithoutContextTest()
         {
             // parse a document before calling SantizeDom
-            var sanitizer = new HtmlSanitizer();
-            var parser = new HtmlParser(new HtmlParserOptions(), BrowsingContext.New(new Configuration().WithCss(new CssParserOptions
+            var sanitizer = new XmlSanitizer();
+            var parser = new XmlParser(new XmlParserOptions(), BrowsingContext.New(new Configuration().WithCss(new CssParserOptions
             {
                 IsIncludingUnknownDeclarations = true,
                 IsIncludingUnknownRules = true,
                 IsToleratingInvalidSelectors = true,
             })));
-            var html = @"<html><head></head><body><div>hi</div></body></html>";
+            var Xml = @"<Xml><head></head><body><div>hi</div></body></Xml>";
 
-            var document = parser.ParseDocument(html);
+            var document = parser.ParseDocument(Xml);
             var returnedDocument = sanitizer.SanitizeDom(document);
 
-            Assert.Equal("<html><head></head><body><div>hi</div></body></html>", returnedDocument.ToHtml());
+            Assert.Equal("<Xml><head></head><body><div>hi</div></body></Xml>", returnedDocument.ToHtml());
         }
 
         [Fact]
         public void PreParsedDocumentWithContextTest()
         {
             // parse a document before calling SantizeDom
-            var sanitizer = new HtmlSanitizer();
-            var parser = new HtmlParser(new HtmlParserOptions(), BrowsingContext.New(new Configuration().WithCss(new CssParserOptions
+            var sanitizer = new XmlSanitizer();
+            var parser = new XmlParser(new XmlParserOptions(), BrowsingContext.New(new Configuration().WithCss(new CssParserOptions
             {
                 IsIncludingUnknownDeclarations = true,
                 IsIncludingUnknownRules = true,
                 IsToleratingInvalidSelectors = true,
             })));
-            var html = @"<html><head></head><body><div>hi</div></body></html>";
+            var Xml = @"<Xml><head></head><body><div>hi</div></body></Xml>";
 
-            var document = parser.ParseDocument(html);
+            var document = parser.ParseDocument(Xml);
             var returnedDocument = sanitizer.SanitizeDom(document, document.Body);
 
-            Assert.Equal("<html><head></head><body><div>hi</div></body></html>", returnedDocument.ToHtml());
+            Assert.Equal("<Xml><head></head><body><div>hi</div></body></Xml>", returnedDocument.ToHtml());
         }
 
         [Fact]
         public void StyleByPassTest()
         {
-            var sanitizer = new HtmlSanitizer();
+            var sanitizer = new XmlSanitizer();
 
             sanitizer.AllowedTags.Add("style");
 
-            var html = "aaabc<style>x[x='\\3c /style>\\3c img src onerror=alert(1)>']{}</style>";
-            var sanitized = sanitizer.Sanitize(html, "http://www.example.com");
+            var Xml = "aaabc<style>x[x='\\3c /style>\\3c img src onerror=alert(1)>']{}</style>";
+            var sanitized = sanitizer.Sanitize(Xml, "http://www.example.com");
 
             Assert.Equal("aaabc<style>x[x=\"\\3c/style>\\3cimg src onerror=alert(1)>\"] { }</style>", sanitized);
         }
@@ -3209,13 +3225,13 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void Number260Test()
         {
-            // see https://github.com/mganss/HtmlSanitizer/issues/260
-            var sanitizer = new HtmlSanitizer();
+            // see https://github.com/mganss/XmlSanitizer/issues/260
+            var sanitizer = new XmlSanitizer();
             sanitizer.AllowedCssProperties.Clear();
             var removingStyleTriggered = false;
             sanitizer.RemovingStyle += (s, e) => removingStyleTriggered = true;
-            var html = @"<section style='background: none'></section>";
-            var sanitized = sanitizer.Sanitize(html);
+            var Xml = @"<section style='background: none'></section>";
+            var sanitized = sanitizer.Sanitize(Xml);
             Assert.Equal("<section></section>", sanitized);
             Assert.True(removingStyleTriggered);
         }
@@ -3223,18 +3239,18 @@ zqy1QY1kkPOuMvKWvvmFIwClI2393jVVcp91eda4+J+fIYDbfJa7RY5YcNrZhTuV//9k="">
         [Fact]
         public void Number263Test()
         {
-            // see https://github.com/mganss/HtmlSanitizer/issues/263
-            var html = @"<div style=""width: calc((600px - 300px) / 2)"">Test</div>";
-            var sanitized = Sanitizer.Sanitize(html);
+            // see https://github.com/mganss/XmlSanitizer/issues/263
+            var Xml = @"<div style=""width: calc((600px - 300px) / 2)"">Test</div>";
+            var sanitized = Sanitizer.Sanitize(Xml);
             Assert.Equal(@"<div style=""width: calc((600px - 300px) / 2)"">Test</div>", sanitized);
         }
 
         [Fact]
         public void Number272Test()
         {
-            // see https://github.com/mganss/HtmlSanitizer/issues/272
-            var html = @"<span style='grid-template-areas: none; grid-template-columns: none; grid-template-rows: none'>";
-            var sanitized = Sanitizer.Sanitize(html);
+            // see https://github.com/mganss/XmlSanitizer/issues/272
+            var Xml = @"<span style='grid-template-areas: none; grid-template-columns: none; grid-template-rows: none'>";
+            var sanitized = Sanitizer.Sanitize(Xml);
             Assert.Equal("<span></span>", sanitized);
         }
     }

@@ -1,6 +1,6 @@
 ﻿using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
+using AngleSharp.Xml.Dom;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,7 +8,7 @@ using System.ComponentModel;
 namespace Ganss.XSS
 {
     /// <summary>
-    /// Provides data for the <see cref="HtmlSanitizer.PostProcessDom"/> event.
+    /// Provides data for the <see cref="XmlSanitizer.PostProcessDom"/> event.
     /// </summary>
     public class PostProcessDomEventArgs : EventArgs
     {
@@ -18,19 +18,19 @@ namespace Ganss.XSS
         /// <value>
         /// The document.
         /// </value>
-        public IHtmlDocument Document { get; private set; }
+        public IXmlDocument Document { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PostProcessDomEventArgs"/> class.
         /// </summary>
-        public PostProcessDomEventArgs(IHtmlDocument document)
+        public PostProcessDomEventArgs(IXmlDocument document)
         {
             Document = document;
         }
     }
 
     /// <summary>
-    /// Provides data for the <see cref="HtmlSanitizer.PostProcessNode"/> event.
+    /// Provides data for the <see cref="XmlSanitizer.PostProcessNode"/> event.
     /// </summary>
     public class PostProcessNodeEventArgs : EventArgs
     {
@@ -40,7 +40,7 @@ namespace Ganss.XSS
         /// <value>
         /// The document.
         /// </value>
-        public IHtmlDocument Document { get; private set; }
+        public IXmlDocument Document { get; private set; }
 
         /// <summary>
         /// Gets or sets the DOM node to be processed.
@@ -61,7 +61,7 @@ namespace Ganss.XSS
         /// <summary>
         /// Initializes a new instance of the <see cref="PostProcessNodeEventArgs"/> class.
         /// </summary>
-        public PostProcessNodeEventArgs(IHtmlDocument document, INode node)
+        public PostProcessNodeEventArgs(IXmlDocument document, INode node)
         {
             Document = document;
             Node = node;
@@ -70,7 +70,7 @@ namespace Ganss.XSS
     }
 
     /// <summary>
-    /// Provides data for the <see cref="HtmlSanitizer.RemovingTag"/> event.
+    /// Provides data for the <see cref="XmlSanitizer.RemovingTag"/> event.
     /// </summary>
     public class RemovingTagEventArgs : CancelEventArgs
     {
@@ -103,7 +103,7 @@ namespace Ganss.XSS
     }
 
     /// <summary>
-    /// Provides data for the <see cref="HtmlSanitizer.RemovingAttribute"/> event.
+    /// Provides data for the <see cref="XmlSanitizer.RemovingAttribute"/> event.
     /// </summary>
     public class RemovingAttributeEventArgs : CancelEventArgs
     {
@@ -146,7 +146,7 @@ namespace Ganss.XSS
     }
 
     /// <summary>
-    /// Provides data for the <see cref="HtmlSanitizer.RemovingStyle"/> event.
+    /// Provides data for the <see cref="XmlSanitizer.RemovingStyle"/> event.
     /// </summary>
     public class RemovingStyleEventArgs : CancelEventArgs
     {
@@ -189,7 +189,7 @@ namespace Ganss.XSS
     }
 
     /// <summary>
-    /// Provides data for the <see cref="HtmlSanitizer.RemovingAtRule"/> event.
+    /// Provides data for the <see cref="XmlSanitizer.RemovingAtRule"/> event.
     /// </summary>
     public class RemovingAtRuleEventArgs : CancelEventArgs
     {
@@ -222,7 +222,7 @@ namespace Ganss.XSS
     }
 
     /// <summary>
-    /// Provides data for the <see cref="HtmlSanitizer.RemovingComment"/> event.
+    /// Provides data for the <see cref="XmlSanitizer.RemovingComment"/> event.
     /// </summary>
     public class RemovingCommentEventArgs : CancelEventArgs
     {
@@ -245,7 +245,7 @@ namespace Ganss.XSS
     }
 
     /// <summary>
-    /// Provides data for the <see cref="HtmlSanitizer.RemovingCssClass"/> event.
+    /// Provides data for the <see cref="XmlSanitizer.RemovingCssClass"/> event.
     /// </summary>
     public class RemovingCssClassEventArgs : CancelEventArgs
     {
@@ -288,9 +288,9 @@ namespace Ganss.XSS
     }
 
     /// <summary>
-    /// Provides data for the <see cref="HtmlSanitizer.FilterUrl"/> event.
+    /// Provides data for the <see cref="XmlSanitizer.FilterUrl"/> event.
     /// </summary>
-    public class FilterUrlEventArgs: EventArgs
+    public class FilterUrlEventArgs : EventArgs
     {
         /// <summary>
         /// Gets or sets the original URL.

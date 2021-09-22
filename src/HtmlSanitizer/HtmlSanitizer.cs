@@ -2,8 +2,8 @@ using AngleSharp;
 using AngleSharp.Css.Dom;
 using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
-using AngleSharp.Html.Parser;
+using AngleSharp.Xml.Dom;
+using AngleSharp.Xml.Parser;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -14,41 +14,41 @@ using System.Text.RegularExpressions;
 namespace Ganss.XSS
 {
     /// <summary>
-    /// Cleans HTML documents and fragments from constructs that can lead to <a href="https://en.wikipedia.org/wiki/Cross-site_scripting">XSS attacks</a>.
+    /// Cleans Xml documents and fragments from constructs that can lead to <a href="https://en.wikipedia.org/wiki/Cross-site_scripting">XSS attacks</a>.
     /// </summary>
     /// <remarks>
-    /// XSS attacks can occur at several levels within an HTML document or fragment:
+    /// XSS attacks can occur at several levels within an Xml document or fragment:
     /// <list type="bullet">
-    /// <item>HTML Tags (e.g. the &lt;script&gt; tag)</item>
-    /// <item>HTML attributes (e.g. the "onload" attribute)</item>
+    /// <item>Xml Tags (e.g. the &lt;script&gt; tag)</item>
+    /// <item>Xml attributes (e.g. the "onload" attribute)</item>
     /// <item>CSS styles (url property values)</item>
-    /// <item>malformed HTML or HTML that exploits parser bugs in specific browsers</item>
+    /// <item>malformed Xml or Xml that exploits parser bugs in specific browsers</item>
     /// </list>
     /// <para>
-    /// The HtmlSanitizer class addresses all of these possible attack vectors by using a sophisticated HTML parser (<a href="https://github.com/AngleSharp/AngleSharp">AngleSharp</a>).
+    /// The XmlSanitizer class addresses all of these possible attack vectors by using a sophisticated Xml parser (<a href="https://github.com/AngleSharp/AngleSharp">AngleSharp</a>).
     /// </para>
     /// <para>
-    /// In order to facilitate different use cases, HtmlSanitizer can be customized at the levels mentioned above:
+    /// In order to facilitate different use cases, XmlSanitizer can be customized at the levels mentioned above:
     /// <list type="bullet">
-    /// <item>You can specify the allowed HTML tags through the property <see cref="AllowedTags"/>. All other tags will be stripped.</item>
-    /// <item>You can specify the allowed HTML attributes through the property <see cref="AllowedAttributes"/>. All other attributes will be stripped.</item>
+    /// <item>You can specify the allowed Xml tags through the property <see cref="AllowedTags"/>. All other tags will be stripped.</item>
+    /// <item>You can specify the allowed Xml attributes through the property <see cref="AllowedAttributes"/>. All other attributes will be stripped.</item>
     /// <item>You can specify the allowed CSS property names through the property <see cref="AllowedCssProperties"/>. All other styles will be stripped.</item>
     /// <item>You can specify the allowed URI schemes through the property <see cref="AllowedSchemes"/>. All other URIs will be stripped.</item>
-    /// <item>You can specify the HTML attributes that contain URIs (such as "src", "href" etc.) through the property <see cref="UriAttributes"/>.</item>
+    /// <item>You can specify the Xml attributes that contain URIs (such as "src", "href" etc.) through the property <see cref="UriAttributes"/>.</item>
     /// </list>
     /// </para>
     /// </remarks>
     /// <example>
     /// <code>
     /// <![CDATA[
-    /// var sanitizer = new HtmlSanitizer();
-    /// var html = @"<script>alert('xss')</script><div onload=""alert('xss')"" style=""background-color: test"">Test<img src=""test.gif"" style=""background-image: url(javascript:alert('xss')); margin: 10px""></div>";
-    /// var sanitized = sanitizer.Sanitize(html, "http://www.example.com");
+    /// var sanitizer = new XmlSanitizer();
+    /// var Xml = @"<script>alert('xss')</script><div onload=""alert('xss')"" style=""background-color: test"">Test<img src=""test.gif"" style=""background-image: url(javascript:alert('xss')); margin: 10px""></div>";
+    /// var sanitized = sanitizer.Sanitize(Xml, "http://www.example.com");
     /// // -> "<div style="background-color: test">Test<img style="margin: 10px" src="http://www.example.com/test.gif"></div>"
     /// ]]>
     /// </code>
     /// </example>
-    public class HtmlSanitizer : IHtmlSanitizer
+    public class XmlSanitizer : IXmlSanitizer
     {
         // from http://genshi.edgewall.org/
         private static readonly Regex CssUnicodeEscapes = new(@"\\([0-9a-fA-F]{1,6})\s?|\\([^\r\n\f0-9a-fA-F'""{};:()#*])", RegexOptions.Compiled);
@@ -63,17 +63,17 @@ namespace Ganss.XSS
             IsToleratingInvalidSelectors = true,
         });
 
-        private static readonly HtmlParser defaultHtmlParser = new(new HtmlParserOptions(), BrowsingContext.New(defaultConfiguration));
+        private static readonly XmlParser defaultXmlParser = new(new XmlParserOptions(), BrowsingContext.New(defaultConfiguration));
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HtmlSanitizer"/> class.
+        /// Initializes a new instance of the <see cref="XmlSanitizer"/> class.
         /// </summary>
         /// <param name="allowedTags">The allowed tag names such as "a" and "div". When <c>null</c>, uses <see cref="DefaultAllowedTags"/></param>
         /// <param name="allowedSchemes">The allowed HTTP schemes such as "http" and "https". When <c>null</c>, uses <see cref="DefaultAllowedSchemes"/></param>
-        /// <param name="allowedAttributes">The allowed HTML attributes such as "href" and "alt". When <c>null</c>, uses <see cref="DefaultAllowedAttributes"/></param>
-        /// <param name="uriAttributes">The HTML attributes that can contain a URI such as "href". When <c>null</c>, uses <see cref="DefaultUriAttributes"/></param>
+        /// <param name="allowedAttributes">The allowed Xml attributes such as "href" and "alt". When <c>null</c>, uses <see cref="DefaultAllowedAttributes"/></param>
+        /// <param name="uriAttributes">The Xml attributes that can contain a URI such as "href". When <c>null</c>, uses <see cref="DefaultUriAttributes"/></param>
         /// <param name="allowedCssProperties">The allowed CSS properties such as "font" and "margin". When <c>null</c>, uses <see cref="DefaultAllowedCssProperties"/></param>
-        public HtmlSanitizer(IEnumerable<string>? allowedTags = null, IEnumerable<string>? allowedSchemes = null,
+        public XmlSanitizer(IEnumerable<string>? allowedTags = null, IEnumerable<string>? allowedSchemes = null,
             IEnumerable<string>? allowedAttributes = null, IEnumerable<string>? uriAttributes = null, IEnumerable<string>? allowedCssProperties = null)
         {
             AllowedTags = new HashSet<string>(allowedTags ?? DefaultAllowedTags, StringComparer.OrdinalIgnoreCase);
@@ -96,19 +96,19 @@ namespace Ganss.XSS
         public bool KeepChildNodes { get; set; } = DefaultKeepChildNodes;
 
         /// <summary>
-        /// Gets or sets the default <see cref="Func{HtmlParser}"/> object that creates the parser used for parsing the input.
+        /// Gets or sets the default <see cref="Func{XmlParser}"/> object that creates the parser used for parsing the input.
         /// </summary>
-        public static Func<HtmlParser> DefaultHtmlParserFactory { get; set; } = () => defaultHtmlParser;
+        public static Func<XmlParser> DefaultXmlParserFactory { get; set; } = () => defaultXmlParser;
 
         /// <summary>
-        /// Gets or sets the <see cref="Func{HtmlParser}"/> object the creates the parser used for parsing the input.
+        /// Gets or sets the <see cref="Func{XmlParser}"/> object the creates the parser used for parsing the input.
         /// </summary>
-        public Func<HtmlParser> HtmlParserFactory { get; set; } = DefaultHtmlParserFactory;
+        public Func<XmlParser> XmlParserFactory { get; set; } = DefaultXmlParserFactory;
 
         /// <summary>
-        /// Gets or sets the default <see cref="IMarkupFormatter"/> object used for generating output. Default is <see cref="HtmlFormatter.Instance"/>.
+        /// Gets or sets the default <see cref="IMarkupFormatter"/> object used for generating output. Default is <see cref="XmlFormatter.Instance"/>.
         /// </summary>
-        public static IMarkupFormatter DefaultOutputFormatter { get; set; } = HtmlFormatter.Instance;
+        public static IMarkupFormatter DefaultOutputFormatter { get; set; } = XmlFormatter.Instance;
 
         /// <summary>
         /// Gets or sets the <see cref="IMarkupFormatter"/> object used for generating output. Default is <see cref="DefaultOutputFormatter"/>.
@@ -142,7 +142,7 @@ namespace Ganss.XSS
         public static ISet<string> DefaultAllowedSchemes { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "http", "https" };
 
         /// <summary>
-        /// Gets or sets the allowed HTML tag names such as "a" and "div".
+        /// Gets or sets the allowed Xml tag names such as "a" and "div".
         /// </summary>
         /// <value>
         /// The allowed tag names.
@@ -150,10 +150,10 @@ namespace Ganss.XSS
         public ISet<string> AllowedTags { get; private set; }
 
         /// <summary>
-        /// The default allowed HTML tag names.
+        /// The default allowed Xml tag names.
         /// </summary>
         public static ISet<string> DefaultAllowedTags { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-            // https://developer.mozilla.org/en/docs/Web/Guide/HTML/HTML5/HTML5_element_list
+            // https://developer.mozilla.org/en/docs/Web/Guide/Xml/Xml5/Xml5_element_list
             "a", "abbr", "acronym", "address", "area", "b",
             "big", "blockquote", "br", "button", "caption", "center", "cite",
             "code", "col", "colgroup", "dd", "del", "dfn", "dir", "div", "dl", "dt",
@@ -163,7 +163,7 @@ namespace Ganss.XSS
             "select", "small", "span", "strike", "strong", "sub", "sup", "table",
             "tbody", "td", "textarea", "tfoot", "th", "thead", "tr", "tt", "u",
             "ul", "var",
-            // HTML5
+            // Xml5
             // Sections
             "section", "nav", "article", "aside", "header", "footer", "main",
             // Grouping content
@@ -175,27 +175,27 @@ namespace Ganss.XSS
             // Interactive elements
             "details", "summary", "menuitem",
             // document elements
-            "html", "head", "body"
+            "Xml", "head", "body"
         };
 
         /// <summary>
-        /// Gets or sets the allowed HTML attributes such as "href" and "alt".
+        /// Gets or sets the allowed Xml attributes such as "href" and "alt".
         /// </summary>
         /// <value>
-        /// The allowed HTML attributes.
+        /// The allowed Xml attributes.
         /// </value>
         public ISet<string> AllowedAttributes { get; private set; }
 
         /// <summary>
-        /// Allow all HTML5 data attributes; the attributes prefixed with data-
+        /// Allow all Xml5 data attributes; the attributes prefixed with data-
         /// </summary>
         public bool AllowDataAttributes { get; set; }
 
         /// <summary>
-        /// The default allowed HTML attributes.
+        /// The default allowed Xml attributes.
         /// </summary>
-        public static ISet<string> DefaultAllowedAttributes { get; }  = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-            // https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes
+        public static ISet<string> DefaultAllowedAttributes { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            // https://developer.mozilla.org/en-US/docs/Web/Xml/Attributes
             "abbr", "accept", "accept-charset", "accesskey",
             "action", "align", "alt", "axis", "bgcolor", "border", "cellpadding",
             "cellspacing", "char", "charoff", "charset", "checked", "cite", /* "class", */
@@ -207,7 +207,7 @@ namespace Ganss.XSS
             "rows", "rowspan", "rules", "scope", "selected", "shape", "size",
             "span", "src", "start", "style", "summary", "tabindex", "target", "title",
             "type", "usemap", "valign", "value", "vspace", "width",
-            // HTML5
+            // Xml5
             "high", // <meter>
             "keytype", // <keygen>
             "list", // <input>
@@ -235,7 +235,7 @@ namespace Ganss.XSS
         };
 
         /// <summary>
-        /// Gets or sets the HTML attributes that can contain a URI such as "href".
+        /// Gets or sets the Xml attributes that can contain a URI such as "href".
         /// </summary>
         /// <value>
         /// The URI attributes.
@@ -271,7 +271,7 @@ namespace Ganss.XSS
             "background-position-x",
             "background-position-y",
             "background-repeat",
-            "background-repeat-x", // see https://github.com/mganss/HtmlSanitizer/issues/243
+            "background-repeat-x", // see https://github.com/mganss/XmlSanitizer/issues/243
             "background-repeat-y",
             "background-size",
             "border",
@@ -560,62 +560,63 @@ namespace Ganss.XSS
         }
 
         /// <summary>
-        /// Sanitizes the specified HTML body fragment. If a document is given, only the body part will be returned.
+        /// Sanitizes the specified Xml body fragment. If a document is given, only the body part will be returned.
         /// </summary>
-        /// <param name="html">The HTML body fragment to sanitize.</param>
+        /// <param name="Xml">The Xml body fragment to sanitize.</param>
         /// <param name="baseUrl">The base URL relative URLs are resolved against. No resolution if empty.</param>
         /// <param name="outputFormatter">The formatter used to render the DOM. Using the <see cref="OutputFormatter"/> if null.</param>
-        /// <returns>The sanitized HTML body fragment.</returns>
-        public string Sanitize(string html, string baseUrl = "", IMarkupFormatter? outputFormatter = null)
+        /// <returns>The sanitized Xml body fragment.</returns>
+        public string Sanitize(string Xml, string baseUrl = "", IMarkupFormatter? outputFormatter = null)
         {
-            using var dom = SanitizeDom(html, baseUrl);
-            if (dom.Body == null) return string.Empty;
-            var output = dom.Body.ChildNodes.ToHtml(outputFormatter ?? OutputFormatter);
+            using var dom = SanitizeDom(Xml, baseUrl);
+            if (dom == null) return string.Empty;
+            var output = dom.ChildNodes.ToHtml(outputFormatter ?? OutputFormatter);
             return output;
         }
 
         /// <summary>
-        /// Sanitizes the specified HTML body fragment. If a document is given, only the body part will be returned.
+        /// Sanitizes the specified Xml body fragment. If a document is given, only the body part will be returned.
         /// </summary>
-        /// <param name="html">The HTML body fragment to sanitize.</param>
+        /// <param name="Xml">The Xml body fragment to sanitize.</param>
         /// <param name="baseUrl">The base URL relative URLs are resolved against. No resolution if empty.</param>
-        /// <returns>The sanitized HTML document.</returns>
-        public IHtmlDocument SanitizeDom(string html, string baseUrl = "")
+        /// <returns>The sanitized Xml document.</returns>
+        public IXmlDocument SanitizeDom(string Xml, string baseUrl = "")
         {
-            var parser = HtmlParserFactory();
-            var dom = parser.ParseDocument("<html><body>" + html);
+            var parser = XmlParserFactory();
+            var dom = parser.ParseDocument(Xml);
 
-            if (dom.Body != null)
-                DoSanitize(dom, dom.Body, baseUrl);
+            if (dom != null)
+                DoSanitize(dom, dom, baseUrl);
 
-            return dom;
+            // TODO - retirer le !
+            return dom!;
         }
 
         /// <summary>
-        /// Sanitizes the specified parsed HTML body fragment.
+        /// Sanitizes the specified parsed Xml body fragment.
         /// If the document has not been parsed with CSS support then all styles will be removed.
         /// </summary>
-        /// <param name="document">The parsed HTML document.</param>
+        /// <param name="document">The parsed Xml document.</param>
         /// <param name="context">The node within which to sanitize.</param>
         /// <param name="baseUrl">The base URL relative URLs are resolved against. No resolution if empty.</param>
-        /// <returns>The sanitized HTML document.</returns>
-        public IHtmlDocument SanitizeDom(IHtmlDocument document, IHtmlElement? context = null, string baseUrl = "")
+        /// <returns>The sanitized Xml document.</returns>
+        public IXmlDocument SanitizeDom(IXmlDocument document, IElement? context = null, string baseUrl = "")
         {
-            DoSanitize(document, context ?? (IParentNode) document, baseUrl);
+            DoSanitize(document, context ?? (IParentNode)document, baseUrl);
             return document;
         }
 
         /// <summary>
-        /// Sanitizes the specified HTML document. Even if only a fragment is given, a whole document will be returned.
+        /// Sanitizes the specified Xml document. Even if only a fragment is given, a whole document will be returned.
         /// </summary>
-        /// <param name="html">The HTML document to sanitize.</param>
+        /// <param name="Xml">The Xml document to sanitize.</param>
         /// <param name="baseUrl">The base URL relative URLs are resolved against. No resolution if empty.</param>
         /// <param name="outputFormatter">The formatter used to render the DOM. Using the <see cref="OutputFormatter"/> if null.</param>
-        /// <returns>The sanitized HTML document.</returns>
-        public string SanitizeDocument(string html, string baseUrl = "", IMarkupFormatter? outputFormatter = null)
+        /// <returns>The sanitized Xml document.</returns>
+        public string SanitizeDocument(string Xml, string baseUrl = "", IMarkupFormatter? outputFormatter = null)
         {
-            var parser = HtmlParserFactory();
-            var dom = parser.ParseDocument(html);
+            var parser = XmlParserFactory();
+            var dom = parser.ParseDocument(Xml);
 
             DoSanitize(dom, dom, baseUrl);
 
@@ -625,16 +626,16 @@ namespace Ganss.XSS
         }
 
         /// <summary>
-        /// Sanitizes the specified HTML document. Even if only a fragment is given, a whole document will be returned.
+        /// Sanitizes the specified Xml document. Even if only a fragment is given, a whole document will be returned.
         /// </summary>
-        /// <param name="html">The HTML document to sanitize.</param>
+        /// <param name="Xml">The Xml document to sanitize.</param>
         /// <param name="baseUrl">The base URL relative URLs are resolved against. No resolution if empty.</param>
         /// <param name="outputFormatter">The formatter used to render the DOM. Using the <see cref="OutputFormatter"/> if null.</param>
-        /// <returns>The sanitized HTML document.</returns>
-        public string SanitizeDocument(Stream html, string baseUrl = "", IMarkupFormatter? outputFormatter = null)
+        /// <returns>The sanitized Xml document.</returns>
+        public string SanitizeDocument(Stream Xml, string baseUrl = "", IMarkupFormatter? outputFormatter = null)
         {
-            var parser = HtmlParserFactory();
-            var dom = parser.ParseDocument(html);
+            var parser = XmlParserFactory();
+            var dom = parser.ParseDocument(Xml);
 
             DoSanitize(dom, dom, baseUrl);
 
@@ -659,7 +660,7 @@ namespace Ganss.XSS
             }
         }
 
-        private void DoSanitize(IHtmlDocument dom, IParentNode context, string baseUrl = "")
+        private void DoSanitize(IXmlDocument dom, IParentNode context, string baseUrl = "")
         {
             // remove disallowed tags
             foreach (var tag in context.QuerySelectorAll("*").Where(t => !IsAllowedTag(t)).ToList())
@@ -726,7 +727,7 @@ namespace Ganss.XSS
             DoPostProcess(dom, context as INode);
         }
 
-        private void SanitizeStyleSheets(IHtmlDocument dom, string baseUrl)
+        private void SanitizeStyleSheets(IXmlDocument dom, string baseUrl)
         {
             foreach (var styleSheet in dom.StyleSheets.OfType<ICssStyleSheet>())
             {
@@ -788,9 +789,9 @@ namespace Ganss.XSS
         /// <summary>
         /// Performs post processing on all nodes in the document.
         /// </summary>
-        /// <param name="dom">The HTML document.</param>
+        /// <param name="dom">The Xml document.</param>
         /// <param name="context">The node within which to post process all nodes.</param>
-        private void DoPostProcess(IHtmlDocument dom, INode? context)
+        private void DoPostProcess(IXmlDocument dom, INode? context)
         {
             if (PostProcessNode != null)
             {
@@ -843,7 +844,7 @@ namespace Ganss.XSS
         private bool IsAllowedAttribute(IAttr attribute)
         {
             return AllowedAttributes.Contains(attribute.Name)
-                // test html5 data- attributes
+                // test Xml5 data- attributes
                 || (AllowDataAttributes && attribute.Name != null && attribute.Name.StartsWith("data-", StringComparison.OrdinalIgnoreCase));
         }
 
