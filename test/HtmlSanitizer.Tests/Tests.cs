@@ -43,12 +43,12 @@ namespace Ganss.XSS.Tests
 
 
         [Fact]
-        public void Prout()
+        public void CircleSvgTest()
         {
             var s = new XmlSanitizer();
             s.AllowedTags.Add("svg");
             s.AllowedTags.Add("circle");
-            s.AllowedAttributes("cx");
+            s.AllowedAttributes.Add("cx");
             var Xml = "<svg height=\"100\" width=\"100\"><circle cx=\"50\" cy=\"50\" r=\"40\" stroke=\"black\" stroke-width=\"3\" fill=\"red\" /></svg>";
 
             var actual = s.SanitizeDocument(Xml);
